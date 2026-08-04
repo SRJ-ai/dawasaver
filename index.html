@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DawaSaver — same salt, lower price</title>
-<meta name="description" content="Search a medicine brand and see same-composition alternatives ranked by real per-unit price. Real open data, 1000+ medicines.">
+<meta name="description" content="Search 230,000+ Indian medicines and see same-composition alternatives ranked by real per-unit price, including Jan Aushadhi options.">
 <style>
   :root{
     --bg:#f6f8fb; --card:#ffffff; --ink:#0f172a; --sub:#64748b; --line:#e6eaf0;
     --brand:#0d9488; --brand-ink:#0b7c72; --accent:#f97316; --good:#16a34a;
-    --good-bg:#e8f7ee; --shadow:0 6px 24px rgba(15,23,42,.06); --radius:16px;
+    --good-bg:#e8f7ee; --ja:#7c3aed; --ja-bg:#f1ebfe; --shadow:0 6px 24px rgba(15,23,42,.06); --radius:16px;
   }
   @media (prefers-color-scheme:dark){
     :root{--bg:#0b1220;--card:#121a2b;--ink:#e8edf5;--sub:#93a2b8;--line:#1f2a3d;
-      --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--shadow:0 6px 24px rgba(0,0,0,.35);}
+      --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--ja:#c4b5fd;--ja-bg:#241a3a;--shadow:0 6px 24px rgba(0,0,0,.35);}
   }
   :root[data-theme="dark"]{--bg:#0b1220;--card:#121a2b;--ink:#e8edf5;--sub:#93a2b8;--line:#1f2a3d;
-    --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--shadow:0 6px 24px rgba(0,0,0,.35);}
+    --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--ja:#c4b5fd;--ja-bg:#241a3a;--shadow:0 6px 24px rgba(0,0,0,.35);}
   :root[data-theme="light"]{--bg:#f6f8fb;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e6eaf0;
-    --brand:#0d9488;--brand-ink:#0b7c72;--good:#16a34a;--good-bg:#e8f7ee;--shadow:0 6px 24px rgba(15,23,42,.06);}
+    --brand:#0d9488;--brand-ink:#0b7c72;--good:#16a34a;--good-bg:#e8f7ee;--ja:#7c3aed;--ja-bg:#f1ebfe;--shadow:0 6px 24px rgba(15,23,42,.06);}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -62,20 +62,21 @@
   .mfr{color:var(--sub);font-size:12px;margin-top:6px}
   .price{text-align:right;white-space:nowrap}
   .price .amt{font-weight:800;font-size:20px}
-  .price .unit{color:var(--sub);font-size:12px}
   .price .pack{color:var(--sub);font-size:11px;margin-top:2px}
-  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:8px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:8px;margin-right:6px}
   .b-low{background:var(--good-bg);color:var(--good)}
+  .b-ja{background:var(--ja-bg);color:var(--ja)}
   .save{color:var(--good);font-weight:700;font-size:13px;margin-top:6px}
   .searched{border:1.5px solid var(--brand)}
   .searched .searched-tag{font-size:11px;font-weight:700;color:var(--brand-ink);text-transform:uppercase;letter-spacing:.06em}
+  .more{width:100%;padding:12px;border:1px dashed var(--line);background:transparent;color:var(--brand-ink);border-radius:12px;cursor:pointer;font-size:14px;font-weight:600}
 
   .disclaimer{background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--ink);margin:16px 0}
   .empty{text-align:center;color:var(--sub);padding:40px 10px}
   .empty .em{font-size:40px}
   footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;color:var(--sub);font-size:13px}
   footer a{color:var(--brand-ink)}
-  .ja-link{display:inline-block;margin-top:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand-ink);border:1px solid color-mix(in srgb,var(--brand) 30%,transparent);padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px}
+  .ja-link{display:inline-block;margin-top:10px;background:var(--ja-bg);color:var(--ja);border:1px solid color-mix(in srgb,var(--ja) 30%,transparent);padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px}
   .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
 </style>
@@ -86,8 +87,8 @@
     <div class="logo"><span class="pill">₹</span>DawaSaver</div>
     <button class="theme-btn" id="theme" title="Toggle theme">🌓</button>
   </header>
-  <div class="tag">Type a medicine brand. See <b>same-composition</b> alternatives ranked by real <b>per-unit</b> price.</div>
-  <div class="stat" id="stat"><span class="spin"></span>Loading medicine data…</div>
+  <div class="tag">Type a medicine brand. See <b>same-composition</b> alternatives ranked by real <b>per-unit</b> price — including <b>Jan Aushadhi</b>.</div>
+  <div class="stat" id="stat"><span class="spin"></span>Loading…</div>
 
   <div class="search">
     <input id="q" type="text" autocomplete="off" disabled placeholder="Loading…" aria-label="Search medicine brand">
@@ -95,14 +96,21 @@
     <div class="sugg" id="sugg"></div>
   </div>
 
-  <div class="chips" id="chips"></div>
+  <div class="chips" id="chips">
+    <span>Try:</span>
+    <button data-q="Augmentin">Augmentin</button>
+    <button data-q="Pan 40">Pan 40</button>
+    <button data-q="Azithral">Azithral</button>
+    <button data-q="Telma">Telma</button>
+    <button data-q="Crocin">Crocin</button>
+  </div>
 
   <div id="out"></div>
 
   <div class="disclaimer" id="disc" style="display:none">
     ⚠️ <b>Confirm exact composition with your doctor or pharmacist before switching.</b>
-    Grouping uses the source's primary salts; some products may contain extra actives.
-    Comparison is by <b>per-unit price</b> (pack sizes differ). Prices are a dataset snapshot — verify on the pack. Not medical advice.
+    Grouping uses primary salts; some products may contain extra actives. Comparison is by
+    <b>per-unit price</b> (pack sizes differ). Prices are dataset/scheme snapshots — verify on the pack. Not medical advice.
   </div>
 
   <footer>
@@ -117,8 +125,8 @@ const money=n=>"₹"+(n>=100?n.toFixed(0):n.toFixed(2));
 const perUnit=(u,uc)=>money(u)+"/"+(uc==="ml"?"ml":"unit");
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
-let DATA=[], bySalt={};
 function norm(s){return s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
+function pfxOf(s){let t=s.toLowerCase().replace(/[^a-z0-9]/g,"");if(!t)return"__";if(t.length===1)return t+"_";return t.slice(0,2);}
 function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
   let prev=Array.from({length:n+1},(_,i)=>i),cur=new Array(n+1);
   for(let i=1;i<=m;i++){cur[0]=i;for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c);}[prev,cur]=[cur,prev];}
@@ -127,132 +135,141 @@ function score(q,brand){q=norm(q);const b=norm(brand);if(!q)return 0;
   if(b.startsWith(q))return 100-b.length*0.05;
   if(b.includes(q))return 80-b.indexOf(q)*0.5;
   const d=lev(q,b.slice(0,Math.max(q.length,3)));return Math.max(0,55-d*18);}
-function searchBrands(q,limit=8){
-  return DATA.map(d=>({d,s:score(q,d.b)})).filter(x=>x.s>28).sort((a,b)=>b.s-a.s).slice(0,limit).map(x=>x.d);
+
+const out=document.getElementById("out"), disc=document.getElementById("disc");
+const inp=document.getElementById("q"), suggBox=document.getElementById("sugg"), stat=document.getElementById("stat");
+
+let META=null, BUCKETS=256;
+const idxCache={}, grpCache={};
+
+async function getIdx(pfx){
+  if(pfx in idxCache) return idxCache[pfx];
+  try{const r=await fetch("data/idx/"+pfx+".json");idxCache[pfx]=r.ok?await r.json():[];}
+  catch{idxCache[pfx]=[];}
+  return idxCache[pfx];
+}
+async function getGroup(gid){
+  const bucket=gid%BUCKETS;
+  if(!(bucket in grpCache)){
+    const r=await fetch("data/grp/"+bucket+".json");
+    grpCache[bucket]=r.ok?await r.json():{};
+  }
+  return grpCache[bucket][gid];
 }
 
-const out=document.getElementById("out");
-const disc=document.getElementById("disc");
-const inp=document.getElementById("q");
-const suggBox=document.getElementById("sugg");
-const stat=document.getElementById("stat");
+let reqId=0;
+async function onType(){
+  const q=inp.value.trim();
+  if(q.length<2){suggBox.classList.remove("on");return;}
+  const my=++reqId;
+  const arr=await getIdx(pfxOf(q));
+  if(my!==reqId) return;                       // stale
+  const list=arr.map(e=>({e,s:score(q,e[0])})).filter(x=>x.s>28).sort((a,b)=>b.s-a.s).slice(0,8).map(x=>x.e);
+  renderSugg(list);
+}
+
+let hlIdx=-1, curSugg=[];
+function renderSugg(list){
+  curSugg=list; hlIdx=-1;
+  if(!list.length){suggBox.classList.remove("on");suggBox.innerHTML="";return;}
+  suggBox.innerHTML=list.map((e,i)=>`<div data-i="${i}"><span>${esc(e[0])}</span><small>${esc(e[1])}</small></div>`).join("");
+  suggBox.classList.add("on");
+  [...suggBox.children].forEach(el=>el.onclick=()=>pick(curSugg[+el.dataset.i]));
+}
+
+let searchedName="", curItems=[], curGroup=null, shown=0;
+async function pick(entry){                     // entry = [brand, salt, gid]
+  inp.value=entry[0]; searchedName=entry[0];
+  suggBox.classList.remove("on");
+  out.innerHTML=`<div class="empty"><span class="spin"></span>Loading options…</div>`;
+  const g=await getGroup(entry[2]);
+  if(!g){out.innerHTML=`<div class="empty">Group not found.</div>`;return;}
+  curGroup=g;
+  curItems=g.items.map(it=>({b:it[0],mf:it[1],m:it[2],u:it[3],p:it[4],kind:it[5]}));
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
 
 function cardHTML(d, refUnit, isSearched, isLowest){
-  const saved = refUnit!=null && d.u<refUnit ? Math.round((1-d.u/refUnit)*100) : 0;
+  const saved=refUnit!=null && d.u<refUnit ? Math.round((1-d.u/refUnit)*100):0;
+  const badges=(isLowest?'<span class="badge b-low">LOWEST PER-UNIT</span>':'')+
+               (d.kind==="jan-aushadhi"?'<span class="badge b-ja">JAN AUSHADHI</span>':'');
   return `<div class="card ${isSearched?'searched':''}">
     <div class="row">
       <div>
         ${isSearched?'<div class="searched-tag">You searched</div>':''}
         <div class="brand-name">${esc(d.b)}</div>
-        <div class="salt">${esc(d.s)}</div>
+        <div class="salt">${esc(curGroup.s)}</div>
         <div class="mfr">${esc(d.mf)}</div>
-        ${isLowest?'<span class="badge b-low">LOWEST PER-UNIT PRICE</span>':''}
+        ${badges}
         ${saved>0?`<div class="save">↓ ${saved}% cheaper per unit than ${esc(searchedName)}</div>`:''}
       </div>
-      <div class="price">
-        <div class="amt">${perUnit(d.u,d.uc)}</div>
-        <div class="pack">${money(d.m)} · ${esc(d.p)}</div>
-      </div>
+      <div class="price"><div class="amt">${perUnit(d.u,curGroup.uc)}</div><div class="pack">${money(d.m)} · ${esc(d.p)}</div></div>
     </div>
   </div>`;
 }
 
-let searchedName="";
-function showResult(d){
-  searchedName=d.b;
-  const group=bySalt[d.s+"|"+d.uc] || [];
-  const cheapest=group[0];
+function render(){
+  const items=curItems;
+  const sIdx=Math.max(0,items.findIndex(x=>x.b===searchedName));
+  const searched=items[sIdx];
+  const cheapest=items[0];
   let html="";
-  if(cheapest && cheapest.b!==d.b && d.u>0){
-    const save=Math.round((1-cheapest.u/d.u)*100);
-    if(save>0){
-      html+=`<div class="hero">
-        <div class="big">Save up to ${save}%</div>
-        <div class="sub">Same salt as <b>${esc(d.b)}</b> (${perUnit(d.u,d.uc)}). Cheapest: <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,cheapest.uc)}.</div>
-      </div>`;
-    }
+  if(cheapest.b!==searched.b && searched.u>0){
+    const save=Math.round((1-cheapest.u/searched.u)*100);
+    if(save>0) html+=`<div class="hero"><div class="big">Save up to ${save}%</div>
+      <div class="sub">Same salt as <b>${esc(searched.b)}</b> (${perUnit(searched.u,curGroup.uc)}). Cheapest: <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div></div>`;
   }
-  html+=cardHTML(d,null,true, cheapest&&cheapest.b===d.b);
-  const alts=group.filter(x=>x.b!==d.b);
+  html+=cardHTML(searched,null,true,sIdx===0);
+  const alts=items.filter((_,i)=>i!==sIdx);
   if(alts.length){
-    html+=`<div class="section-t">Same salt · ${esc(d.s)} — ${alts.length} alternative${alts.length>1?'s':''}, cheapest first</div>`;
-    alts.forEach((x,i)=> html+=cardHTML(x,d.u,false, i===0 && cheapest.b!==d.b));
+    html+=`<div class="section-t">Same salt · ${esc(curGroup.s)} — ${alts.length} alternative${alts.length>1?'s':''}, cheapest first</div>`;
+    shown=Math.min(alts.length,40);
+    html+=`<div id="alts">`+alts.slice(0,shown).map((x,i)=>cardHTML(x,searched.u,false, i===0 && sIdx!==0)).join("")+`</div>`;
+    if(alts.length>shown) html+=`<button class="more" id="more">Show ${alts.length-shown} more</button>`;
+    out.innerHTML=html; disc.style.display="block";
+    const mb=document.getElementById("more");
+    if(mb) mb.onclick=()=>{
+      const box=document.getElementById("alts");
+      box.insertAdjacentHTML("beforeend",alts.slice(shown).map((x,i)=>cardHTML(x,searched.u,false,false)).join(""));
+      mb.remove();
+    };
   }else{
-    html+=`<div class="empty">No same-salt alternative found in this dataset.</div>`;
+    html+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
+    out.innerHTML=html; disc.style.display="block";
   }
-  out.innerHTML=html;
-  disc.style.display="block";
-  suggBox.classList.remove("on");
-  window.scrollTo({top:0,behavior:"smooth"});
 }
 
-function showEmpty(){
-  out.innerHTML=`<div class="empty"><div class="em">💊</div>Search a brand above to see cheaper same-salt options.</div>`;
-  disc.style.display="none";
-}
-
-/* suggestions */
-let hlIdx=-1, curSugg=[];
-function renderSugg(list){
-  curSugg=list; hlIdx=-1;
-  if(!list.length){suggBox.classList.remove("on");suggBox.innerHTML="";return;}
-  suggBox.innerHTML=list.map((d,i)=>`<div data-i="${i}"><span>${esc(d.b)}</span><small>${esc(d.s)}</small></div>`).join("");
-  suggBox.classList.add("on");
-  [...suggBox.children].forEach(el=>el.onclick=()=>{const d=curSugg[+el.dataset.i];inp.value=d.b;showResult(d);});
-}
-inp.addEventListener("input",()=>{const q=inp.value.trim();if(q.length<1){suggBox.classList.remove("on");return;}renderSugg(searchBrands(q));});
+inp.addEventListener("input",onType);
 inp.addEventListener("keydown",e=>{
   if(!suggBox.classList.contains("on"))return;
   if(e.key==="ArrowDown"){e.preventDefault();hlIdx=Math.min(hlIdx+1,curSugg.length-1);}
   else if(e.key==="ArrowUp"){e.preventDefault();hlIdx=Math.max(hlIdx-1,0);}
-  else if(e.key==="Enter"){e.preventDefault();if(hlIdx>=0)showResult(curSugg[hlIdx]);else if(curSugg.length)showResult(curSugg[0]);return;}
+  else if(e.key==="Enter"){e.preventDefault();if(curSugg.length)pick(curSugg[hlIdx>=0?hlIdx:0]);return;}
   else return;
   [...suggBox.children].forEach((el,i)=>el.classList.toggle("hl",i===hlIdx));
 });
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))suggBox.classList.remove("on");});
-
-/* theme */
+document.querySelectorAll(".chips button").forEach(b=>b.onclick=async()=>{
+  inp.value=b.dataset.q; const arr=await getIdx(pfxOf(b.dataset.q));
+  const best=arr.map(e=>({e,s:score(b.dataset.q,e[0])})).sort((a,b)=>b.s-a.s)[0];
+  if(best) pick(best.e);
+});
 document.getElementById("theme").onclick=()=>{
   const cur=document.documentElement.getAttribute("data-theme");
   const next=cur==="dark"?"light":cur==="light"?"dark":(matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark");
   document.documentElement.setAttribute("data-theme",next);
 };
 
-/* build example chips from real high-spread groups */
-function buildChips(meta){
-  const chips=document.getElementById("chips");
-  const groups={};
-  Object.entries(bySalt).forEach(([k,arr])=>{if(arr.length>=3)groups[k]=arr;});
-  const ranked=Object.values(groups).map(arr=>{
-    const lo=arr[0].u, hi=arr[arr.length-1].u;
-    return {arr,spread:hi>0?(hi-lo)/hi:0};
-  }).sort((a,b)=>b.spread-a.spread).slice(0,6);
-  let html='<span>Try:</span>';
-  ranked.forEach(g=>{const dear=g.arr[g.arr.length-1];html+=`<button data-b="${esc(dear.b)}">${esc(dear.b.split(" ").slice(0,2).join(" "))}</button>`;});
-  chips.innerHTML=html;
-  chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
-    inp.value=b.dataset.b;const r=searchBrands(b.dataset.b);if(r.length)showResult(r[0]);
-  });
-}
-
-/* load real data */
-fetch("data/drugs.json")
-  .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
-  .then(j=>{
-    DATA=j.drugs;
-    bySalt={};
-    DATA.forEach(d=>{(bySalt[d.s+"|"+d.uc] ||= []).push(d);});
-    Object.values(bySalt).forEach(a=>a.sort((x,y)=>x.u-y.u));
-    stat.innerHTML=`Comparing <b>${j.meta.count.toLocaleString()}</b> medicines across <b>${j.meta.groups}</b> salt groups · updated ${j.meta.generated.slice(0,10)}`;
-    document.getElementById("src").innerHTML=`Data: <a href="${esc(j.meta.source_url)}" target="_blank" rel="noopener">${esc(j.meta.source)}</a> · regenerated weekly. Not for clinical use.`;
-    inp.disabled=false; inp.placeholder="Search brand e.g. Augmentin, Pan, Azithral…"; inp.focus();
-    buildChips(j.meta);
-    showEmpty();
-  })
-  .catch(e=>{
-    stat.innerHTML=`⚠️ Could not load medicine data (${esc(e.message)}). Refresh the page.`;
-    inp.placeholder="Data unavailable";
-  });
+/* boot */
+fetch("data/meta.json").then(r=>r.json()).then(m=>{
+  META=m; BUCKETS=m.buckets||256;
+  stat.innerHTML=`Searching <b>${m.count.toLocaleString()}</b> medicines · <b>${m.groups.toLocaleString()}</b> salt groups · updated ${m.generated.slice(0,10)}`;
+  const srcs=(m.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(" · ");
+  document.getElementById("src").innerHTML=`Data: ${srcs} · regenerated weekly. Not for clinical use.`;
+  inp.disabled=false; inp.placeholder="Search brand e.g. Augmentin, Pan 40, Azithral…"; inp.focus();
+  out.innerHTML=`<div class="empty"><div class="em">💊</div>Search a brand above to see cheaper same-salt options.</div>`;
+}).catch(e=>{stat.innerHTML=`⚠️ Could not load data (${esc(e.message)}). Refresh the page.`;});
 </script>
 </body>
 </html>

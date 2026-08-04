@@ -4,7 +4,8 @@
 
 Type a medicine **brand name** and instantly see **same-composition** alternatives
 ranked by **real per-unit price** — so you can spot when the exact same salt is
-sold under another brand for a fraction of the cost.
+sold under another brand for a fraction of the cost. Covers **230,000+ products**
+across **12,000+ salt groups**, including **Jan Aushadhi** generic options.
 
 Solves a real India problem (from Razorpay's *Fix My Itch*):
 *"Why do branded drugs dominate prescriptions despite equivalent, cheaper alternatives?"*
@@ -20,30 +21,39 @@ Solves a real India problem (from Razorpay's *Fix My Itch*):
 
 ## How it works
 
-100% static — no backend, no database. Runs free on GitHub Pages.
+100% static — no backend, no database. Runs free on GitHub Pages. To search
+230k+ products without a giant download, the data is **sharded**: the browser
+only fetches a tiny search shard as you type, then one group file when you pick.
 
 ```
-index.html            fetches data/drugs.json, does fuzzy search + grouping in-browser
-data/drugs.json       generated, compact real dataset
-pipeline/build.py     downloads the source dataset, normalises composition,
-                      computes fair per-unit price, groups same-salt brands
+index.html            fuzzy search + rendering in-browser; fetches only small shards
+data/meta.json        summary + source attribution
+data/idx/<pfx>.json   search shard by 2-char brand prefix: [[brand, salt, gid], ...]
+data/grp/<bucket>.json group members by gid bucket: {gid: {s, uc, n, items:[...]}}
+pipeline/build.py     multi-source pipeline that generates all of data/
+pipeline/sources/     Jan Aushadhi seed list (expandable)
 .github/workflows/    weekly cron reruns the pipeline and auto-commits fresh data
 ```
 
-### Data pipeline
+### Data pipeline (multi-source)
 
-Source: **[junioralive/Indian-Medicine-Dataset](https://github.com/junioralive/Indian-Medicine-Dataset)** (MIT, ~254k products).
+| Adapter | Source | Notes |
+|---|---|---|
+| `market` | [junioralive/Indian-Medicine-Dataset](https://github.com/junioralive/Indian-Medicine-Dataset) (MIT) | ~254k branded products |
+| `jan-aushadhi` | `pipeline/sources/jan_aushadhi_seed.csv` (or `$JA_SOURCE_URL`) | Government generic scheme, indicative published prices; merges into matching salt groups |
 
 The pipeline (`pipeline/build.py`, standard-library only):
 
-1. Downloads the source CSV
-2. Drops discontinued / non-allopathy / unpriced rows
+1. Pulls every adapter's records
+2. Drops discontinued / non-allopathy / unpriced rows (market)
 3. Normalises `salt (strength) + salt (strength)` into an order-independent key
 4. Parses pack labels (`strip of 10 tablets`) to compute **price per unit**
-5. Filters combos whose composition the 2-column source can't fully capture
-   (so a 3-salt drug is never grouped as if it were the 2-salt one)
-6. Keeps the most useful same-salt groups (≥3 brands) up to ~1000 products
-7. Writes compact `data/drugs.json`
+5. Filters combos the 2-column source can't fully capture (so a 3-salt drug is
+   never grouped as if it were the 2-salt one)
+6. Trims extreme per-unit outliers (pack-size parse errors / bulk packs)
+7. Groups same-salt brands and writes the sharded `data/` tree
+
+Add another source by writing an adapter function and appending it to `ADAPTERS`.
 
 Refreshed weekly by GitHub Actions (`.github/workflows/refresh.yml`), or run it yourself:
 
@@ -51,6 +61,13 @@ Refreshed weekly by GitHub Actions (`.github/workflows/refresh.yml`), or run it 
 python pipeline/build.py
 python -m http.server 8000   # open http://localhost:8000
 ```
+
+## Custom domain (optional)
+
+The site lives at `https://<user>.github.io/dawasaver/`. To use your own domain,
+add a `CNAME` file containing the domain at the repo root, set your DNS
+(`CNAME` record → `<user>.github.io`, or `A` records to GitHub Pages IPs), then
+enable it under **Settings → Pages → Custom domain**.
 
 ## ⚠️ Disclaimer
 

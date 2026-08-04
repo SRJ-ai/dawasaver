@@ -5,11 +5,18 @@ Thanks for helping make medicine prices transparent. 🙌
 ## Project shape
 
 ```
-index.html                  static frontend (no build step, no framework)
-data/drugs.json             generated data the frontend fetches — do not hand-edit
-pipeline/build.py           regenerates drugs.json from the source dataset (stdlib only)
-.github/workflows/refresh.yml   weekly CI that reruns the pipeline and commits changes
+index.html                        static frontend (no build step, no framework)
+data/                             generated, sharded dataset — do not hand-edit
+  meta.json                       summary + attribution
+  idx/<pfx>.json                  search shards by 2-char brand prefix
+  grp/<bucket>.json               group members by gid bucket
+pipeline/build.py                 multi-source pipeline that regenerates data/ (stdlib only)
+pipeline/sources/                 Jan Aushadhi seed list (expandable)
+.github/workflows/refresh.yml     weekly CI that reruns the pipeline and commits changes
 ```
+
+Add a data source by writing an adapter function (yielding
+`{name, price, pack, c1, c2, mfr, kind}`) and appending it to `ADAPTERS`.
 
 ## Run locally
 

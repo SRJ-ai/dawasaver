@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-DawaSaver data pipeline.
+DawaSaver data pipeline (multi-source, sharded output).
 
-Downloads a real, openly-licensed Indian medicine dataset, normalises each
-product's salt composition into a comparison key, computes a fair per-unit
-price (so a strip of 10 is compared against a strip of 15 honestly), groups
-same-salt brands together, keeps the most useful ~1000 products, and writes a
-compact data/drugs.json the static frontend consumes.
+Pulls medicine data from one or more source adapters, normalises each product's
+salt composition into a comparison key, computes a fair per-unit price, groups
+same-salt brands, and writes a SHARDED static dataset so a browser can search
+hundreds of thousands of products while only ever downloading a few small files:
+
+  data/meta.json                summary + source attribution
+  data/idx/<pfx>.json           search shard: [[brand, salt, gid], ...] by 2-char prefix
+  data/grp/<bucket>.json        {gid: {s, uc, n, items:[[b,mf,m,u,p,kind], ...]}}
+
+Sources (adapters):
+  * market       junioralive/Indian-Medicine-Dataset (MIT) — ~254k branded products
+  * jan-aushadhi pipeline/sources/jan_aushadhi_seed.csv (or $JA_SOURCE_URL) —
+                 government generic-scheme products, indicative published prices
 
 Stdlib only — no pip install needed in CI.
-
-Source: junioralive/Indian-Medicine-Dataset (MIT). Prices/compositions are the
-dataset author's snapshot of publicly listed product info; verify on the pack.
 """
 
 import csv
@@ -19,27 +24,30 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
 import urllib.request
 from datetime import datetime, timezone
 
-SOURCE_URL = (
+HERE = os.path.dirname(__file__)
+DATA = os.path.join(HERE, "..", "data")
+BUCKETS = 256
+
+MARKET_URL = (
     "https://raw.githubusercontent.com/junioralive/"
     "Indian-Medicine-Dataset/main/DATA/indian_medicine_data.csv"
 )
-SOURCE_NAME = "junioralive/Indian-Medicine-Dataset (MIT)"
+JA_SEED = os.path.join(HERE, "sources", "jan_aushadhi_seed.csv")
+JA_URL = os.environ.get("JA_SOURCE_URL")  # optional override with a fuller list
 
-OUT = os.path.join(os.path.dirname(__file__), "..", "data", "drugs.json")
-
-TARGET_COUNT = 1000     # aim for ~this many products in the final file
-MIN_GROUP = 3           # a salt group needs at least this many brands to be useful
-MAX_PER_GROUP = 20      # cap a single salt group so one doesn't dominate
+SOURCES = []  # populated by adapters for the meta block
 
 
+# ---------------------------------------------------------------- helpers
 def fetch(url):
     print(f"downloading {url}", file=sys.stderr)
     req = urllib.request.Request(url, headers={"User-Agent": "dawasaver-pipeline"})
-    with urllib.request.urlopen(req, timeout=120) as r:
+    with urllib.request.urlopen(req, timeout=180) as r:
         raw = r.read().decode("utf-8", errors="replace")
     print(f"  {len(raw):,} bytes", file=sys.stderr)
     return raw
@@ -48,7 +56,7 @@ def fetch(url):
 def parse_price(s):
     if not s:
         return None
-    s = s.replace(",", "").replace("₹", "").strip()
+    s = str(s).replace(",", "").replace("₹", "").strip()
     try:
         v = float(s)
         return v if v > 0 else None
@@ -64,17 +72,13 @@ UNIT_RE = re.compile(
 
 
 def parse_pack(label):
-    """Return (count, unitclass) from a pack label like 'strip of 10 tablets'."""
     if not label:
-        return 1, "unit"
+        return 1.0, "unit"
     m = UNIT_RE.search(label)
     if not m:
-        return 1, "unit"
-    count = float(m.group(1))
-    word = m.group(2).lower()
-    if count <= 0:
-        count = 1
-    unitclass = "ml" if word == "ml" else "unit"
+        return 1.0, "unit"
+    count = float(m.group(1)) or 1.0
+    unitclass = "ml" if m.group(2).lower() == "ml" else "unit"
     return count, unitclass
 
 
@@ -82,14 +86,12 @@ WS_RE = re.compile(r"\s+")
 
 
 def norm_salt(c1, c2):
-    """Normalise composition into a stable, order-independent key + display string."""
     parts = []
     for c in (c1, c2):
         c = (c or "").strip()
         if not c:
             continue
-        c = WS_RE.sub(" ", c)
-        c = c.replace(" )", ")").replace("( ", "(")
+        c = WS_RE.sub(" ", c).replace(" )", ")").replace("( ", "(")
         parts.append(c.strip())
     if not parts:
         return None, None
@@ -99,32 +101,24 @@ def norm_salt(c1, c2):
 
 
 STRENGTH_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:mg|mcg|ml|iu|%|g)\b", re.I)
-
-
-def name_strength_count(name):
-    """How many dose strengths the brand name advertises (e.g. '100mg/325mg/15mg' -> 3)."""
-    return len(STRENGTH_RE.findall(name or ""))
-
-
-# brand-name markers for actives the 2-column source often omits (serratiopeptidase,
-# muscle relaxants). Products carrying these can't be safely grouped by 2 salts.
 HIDDEN_ACTIVE_RE = re.compile(r"(?<![A-Za-z])(SP|MR)(?![A-Za-z])")
 
 
-def has_hidden_active(name):
-    return bool(HIDDEN_ACTIVE_RE.search(name or ""))
+def pfx_of(name):
+    t = re.sub(r"[^a-z0-9]", "", name.lower())
+    if not t:
+        return "__"
+    if len(t) == 1:
+        return t + "_"
+    return t[:2]
 
 
-def build():
-    raw = fetch(SOURCE_URL)
-    reader = csv.DictReader(io.StringIO(raw))
-
-    groups = {}   # saltkey -> {"salt": disp, "unit": unitclass, "items": [...]}
-    seen = set()
-    total_rows = 0
-
-    for row in reader:
-        total_rows += 1
+# ---------------------------------------------------------------- adapters
+def market_adapter():
+    raw = fetch(MARKET_URL)
+    rows = 0
+    for row in csv.DictReader(io.StringIO(raw)):
+        rows += 1
         if (row.get("Is_discontinued") or "").strip().upper() == "TRUE":
             continue
         if (row.get("type") or "").strip().lower() not in ("", "allopathy"):
@@ -132,87 +126,155 @@ def build():
         name = (row.get("name") or "").strip()
         if not name:
             continue
-        price = parse_price(row.get("price(₹)"))
-        if price is None:
+        # source has only 2 salt columns; skip products whose name implies more
+        # actives than captured, so a 3-salt combo is never grouped as a 2-salt one.
+        c1, c2 = row.get("short_composition1"), row.get("short_composition2")
+        _, disp = norm_salt(c1, c2)
+        if not disp:
             continue
-        key, disp = norm_salt(row.get("short_composition1"), row.get("short_composition2"))
-        if not key:
-            continue
-        # source only carries 2 salt columns; if the name advertises more dose
-        # strengths than we captured, the composition is incomplete -> skip so we
-        # never group a 3-salt combo as if it were the 2-salt drug.
         n_salts = disp.count("+") + 1
-        if name_strength_count(name) > n_salts:
+        if len(STRENGTH_RE.findall(name)) > n_salts:
             continue
-        if has_hidden_active(name):
+        if HIDDEN_ACTIVE_RE.search(name):
             continue
-        count, unitclass = parse_pack(row.get("pack_size_label"))
-        gkey = f"{key}|{unitclass}"
-
-        dedupe = (name.lower(), gkey)
-        if dedupe in seen:
-            continue
-        seen.add(dedupe)
-
-        item = {
-            "b": name,
-            "mf": (row.get("manufacturer_name") or "").strip(),
-            "m": round(price, 2),                       # pack MRP
-            "u": round(price / count, 3),               # per-unit price (fair compare)
-            "p": (row.get("pack_size_label") or "").strip(),
+        yield {
+            "name": name,
+            "price": row.get("price(₹)"),
+            "pack": row.get("pack_size_label"),
+            "c1": c1, "c2": c2,
+            "mfr": (row.get("manufacturer_name") or "").strip(),
+            "kind": "market",
         }
-        g = groups.setdefault(gkey, {"salt": disp, "unit": unitclass, "items": []})
-        g["items"].append(item)
+    SOURCES.append({
+        "id": "market",
+        "name": "junioralive/Indian-Medicine-Dataset (MIT)",
+        "url": MARKET_URL,
+        "rows": rows,
+    })
 
-    # keep only groups with real comparison value
-    usable = {
-        k: g for k, g in groups.items()
-        if len(g["items"]) >= MIN_GROUP
-    }
-    # rank groups by how many brands they have (popularity proxy) then by spread
-    def spread(g):
-        us = [it["u"] for it in g["items"]]
-        return (max(us) - min(us)) / max(us) if max(us) else 0
 
-    ranked = sorted(
-        usable.values(),
-        key=lambda g: (len(g["items"]), spread(g)),
-        reverse=True,
-    )
+def jan_aushadhi_adapter():
+    """Government generic-scheme products. Merges into matching salt groups."""
+    if JA_URL:
+        text = fetch(JA_URL)
+        origin = JA_URL
+    else:
+        with open(JA_SEED, encoding="utf-8") as f:
+            text = f.read()
+        origin = "pipeline/sources/jan_aushadhi_seed.csv"
+    n = 0
+    for row in csv.DictReader(io.StringIO(text)):
+        name = (row.get("name") or "").strip()
+        if not name:
+            continue
+        n += 1
+        yield {
+            "name": name,
+            "price": row.get("price"),
+            "pack": row.get("pack_size_label"),
+            "c1": row.get("short_composition1"), "c2": row.get("short_composition2"),
+            "mfr": "PMBJP (Jan Aushadhi)",
+            "kind": "jan-aushadhi",
+        }
+    SOURCES.append({
+        "id": "jan-aushadhi",
+        "name": "Jan Aushadhi (PMBJP) — indicative published prices",
+        "url": origin,
+        "rows": n,
+        "note": "Seed list; expand from the official PMBJP product list. Verify at Kendra.",
+    })
 
-    drugs = []
-    groups_used = 0
-    for g in ranked:
-        items = sorted(g["items"], key=lambda it: it["u"])[:MAX_PER_GROUP]
+
+ADAPTERS = [market_adapter, jan_aushadhi_adapter]
+
+
+# ---------------------------------------------------------------- build
+def build():
+    groups = {}          # gkey -> {"salt", "unit", "items": {bname_lower: item}}
+    for adapter in ADAPTERS:
+        for rec in adapter():
+            price = parse_price(rec["price"])
+            if price is None:
+                continue
+            key, disp = norm_salt(rec["c1"], rec["c2"])
+            if not key:
+                continue
+            count, unitclass = parse_pack(rec["pack"])
+            gkey = f"{key}|{unitclass}"
+            g = groups.setdefault(gkey, {"salt": disp, "unit": unitclass, "items": {}})
+            dk = rec["name"].lower()
+            item = {
+                "b": rec["name"],
+                "mf": rec["mfr"],
+                "m": round(price, 2),
+                "u": round(price / count, 3),
+                "p": (rec["pack"] or "").strip(),
+                "kind": rec["kind"],
+            }
+            # keep the cheaper entry if a duplicate name appears
+            cur = g["items"].get(dk)
+            if cur is None or item["u"] < cur["u"]:
+                g["items"][dk] = item
+
+    # assign integer group ids, prepare shards
+    if os.path.isdir(DATA):
+        shutil.rmtree(DATA)
+    os.makedirs(os.path.join(DATA, "idx"))
+    os.makedirs(os.path.join(DATA, "grp"))
+
+    idx = {}                     # pfx -> [[b, salt, gid], ...]
+    bucket_files = {}            # bucket -> {gid: {...}}
+    gid = 0
+    total_items = 0
+
+    for gkey, g in groups.items():
+        items = sorted(g["items"].values(), key=lambda it: it["u"])
+        # drop extreme per-unit outliers (almost always pack-size parse errors or
+        # bulk/hospital packs) so savings comparisons stay credible
+        if len(items) >= 5:
+            mid = items[len(items) // 2]["u"]
+            if mid > 0:
+                items = [it for it in items if it["u"] <= 25 * mid] or items
+        gid += 1
+        bucket = gid % BUCKETS
+        bucket_files.setdefault(bucket, {})[gid] = {
+            "s": g["salt"],
+            "uc": g["unit"],
+            "n": len(items),
+            "items": [[it["b"], it["mf"], it["m"], it["u"], it["p"], it["kind"]] for it in items],
+        }
         for it in items:
-            it["s"] = g["salt"]
-            it["uc"] = g["unit"]
-            drugs.append(it)
-        groups_used += 1
-        if len(drugs) >= TARGET_COUNT:
-            break
+            idx.setdefault(pfx_of(it["b"]), []).append([it["b"], g["salt"], gid])
+            total_items += 1
 
-    payload = {
-        "meta": {
-            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "source": SOURCE_NAME,
-            "source_url": SOURCE_URL,
-            "source_rows": total_rows,
-            "count": len(drugs),
-            "groups": groups_used,
-            "note": "Prices are the source snapshot; per-unit price (u) enables fair "
-                    "same-salt comparison. Verify on the pack. Not medical advice.",
-        },
-        "drugs": drugs,
+    for pfx, arr in idx.items():
+        arr.sort(key=lambda e: e[0].lower())
+        with open(os.path.join(DATA, "idx", f"{pfx}.json"), "w", encoding="utf-8") as f:
+            json.dump(arr, f, ensure_ascii=False, separators=(",", ":"))
+
+    for bucket, obj in bucket_files.items():
+        with open(os.path.join(DATA, "grp", f"{bucket}.json"), "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
+
+    meta = {
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "count": total_items,
+        "groups": gid,
+        "buckets": BUCKETS,
+        "index_shards": len(idx),
+        "sources": SOURCES,
+        "note": "Comparison by per-unit price. Salt grouping uses primary composition; "
+                "confirm exact composition with a pharmacist. Not medical advice.",
     }
+    with open(os.path.join(DATA, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, separators=(",", ":"))
 
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+    # GitHub Pages: don't run these many files through Jekyll
+    open(os.path.join(DATA, "..", ".nojekyll"), "w").close()
 
     print(
-        f"rows={total_rows:,} usable_groups={len(usable):,} "
-        f"-> wrote {len(drugs):,} drugs in {groups_used} groups to {os.path.relpath(OUT)}",
+        f"products={total_items:,} groups={gid:,} "
+        f"idx_shards={len(idx):,} buckets={len(bucket_files)} -> {os.path.relpath(DATA)}",
         file=sys.stderr,
     )
 
