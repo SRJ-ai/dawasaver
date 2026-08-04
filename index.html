@@ -9,60 +9,74 @@
   :root{
     --paper:#f5f7f4; --card:#ffffff; --ink:#131a18; --muted:#5a6b66; --line:#e4e8e3;
     --brand:#114b45; --brand-ink:#0c605655; --save:#12a15e; --save-bg:#e6f5ec;
-    --ja:#6d3bd1; --ja-bg:#efe9fb; --field:#ffffff;
+    --ja:#6d3bd1; --ja-bg:#efe9fb; --field:#ffffff; --glow:#12a15e14;
     --shadow:0 1px 0 rgba(19,26,24,.04), 0 12px 30px -18px rgba(19,26,24,.28);
     --radius:16px;
   }
   @media (prefers-color-scheme:dark){
     :root{--paper:#0d100f; --card:#161a18; --ink:#eef2ee; --muted:#93a49e; --line:#252b28;
       --brand:#4fd1b5; --brand-ink:#4fd1b555; --save:#34d399; --save-bg:#0f281e;
-      --ja:#c4b5fd; --ja-bg:#241a3a; --field:#11150f00;
+      --ja:#c4b5fd; --ja-bg:#241a3a; --field:#00000000; --glow:#34d39918;
       --shadow:0 1px 0 rgba(0,0,0,.3), 0 16px 40px -20px rgba(0,0,0,.7);}
   }
   :root[data-theme="dark"]{--paper:#0d100f; --card:#161a18; --ink:#eef2ee; --muted:#93a49e; --line:#252b28;
     --brand:#4fd1b5; --brand-ink:#4fd1b555; --save:#34d399; --save-bg:#0f281e;
-    --ja:#c4b5fd; --ja-bg:#241a3a; --field:#11150f00;
+    --ja:#c4b5fd; --ja-bg:#241a3a; --field:#00000000; --glow:#34d39918;
     --shadow:0 1px 0 rgba(0,0,0,.3), 0 16px 40px -20px rgba(0,0,0,.7);}
   :root[data-theme="light"]{--paper:#f5f7f4; --card:#ffffff; --ink:#131a18; --muted:#5a6b66; --line:#e4e8e3;
     --brand:#114b45; --brand-ink:#0c605655; --save:#12a15e; --save-bg:#e6f5ec;
-    --ja:#6d3bd1; --ja-bg:#efe9fb; --field:#ffffff;
+    --ja:#6d3bd1; --ja-bg:#efe9fb; --field:#ffffff; --glow:#12a15e14;
     --shadow:0 1px 0 rgba(19,26,24,.04), 0 12px 30px -18px rgba(19,26,24,.28);}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
+  html{scroll-behavior:smooth}
   body{background:var(--paper);color:var(--ink);
     font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;transition:background .25s,color .25s}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-  .wrap{max-width:560px;margin:0 auto;padding:0 20px 72px}
+  .wrap{max-width:940px;margin:0 auto;padding:0 20px 80px}
+  .col{max-width:680px}
 
-  header{padding:26px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  header{padding:22px 0 6px;display:flex;align-items:center;justify-content:space-between;gap:12px}
   .logo{display:flex;align-items:center;gap:9px;font-weight:750;font-size:18px;letter-spacing:-.01em}
   .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--brand);color:var(--paper);
     display:grid;place-items:center;font-weight:800;font-size:15px}
   .theme-btn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;
-    width:36px;height:36px;cursor:pointer;font-size:15px;line-height:1}
-  .theme-btn:hover{color:var(--ink);border-color:var(--muted)}
+    width:36px;height:36px;cursor:pointer;font-size:15px;line-height:1;transition:.15s}
+  .theme-btn:hover{color:var(--ink);border-color:var(--muted);transform:rotate(-18deg)}
 
-  .display{font-size:clamp(30px,7.6vw,44px);font-weight:820;letter-spacing:-.035em;line-height:1.02;
-    margin:20px 0 10px;text-wrap:balance}
+  /* hero */
+  .hero{position:relative;padding:34px 0 8px;overflow:visible}
+  .eyebrow-top{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:640;color:var(--brand);
+    background:color-mix(in srgb,var(--brand) 9%,transparent);border:1px solid color-mix(in srgb,var(--brand) 20%,transparent);
+    padding:5px 11px;border-radius:999px;margin-bottom:16px}
+  .eyebrow-top .dot{width:6px;height:6px;border-radius:50%;background:var(--save);box-shadow:0 0 0 3px var(--save-bg)}
+  .display{font-size:clamp(34px,6.2vw,62px);font-weight:830;letter-spacing:-.04em;line-height:1.0;
+    margin:0 0 14px;text-wrap:balance}
   .display .u{color:var(--save)}
-  .tag{color:var(--muted);font-size:15px;margin:0 0 6px;max-width:44ch}
+  .tag{color:var(--muted);font-size:clamp(15px,1.7vw,18px);margin:0;max-width:52ch;line-height:1.5}
   .tag b{color:var(--ink);font-weight:640}
-  .stat{font-size:12.5px;color:var(--muted);margin:14px 0 18px}
-  .stat b{color:var(--ink);font-weight:680}
+  /* ambient ladder motif */
+  .motif{position:absolute;top:44px;right:-8px;width:300px;pointer-events:none;opacity:.5;display:none}
+  .motif i{display:block;height:12px;border-radius:999px;margin:12px 0;
+    background:linear-gradient(90deg,color-mix(in srgb,var(--brand) 30%,transparent),transparent)}
 
-  .search{position:relative;margin-top:6px}
-  .search input{width:100%;padding:16px 46px 16px 17px;font-size:16.5px;font-weight:550;
+  /* sticky search */
+  .searchwrap{position:sticky;top:0;z-index:40;margin:22px -20px 0;padding:12px 20px;
+    background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(10px) saturate(1.1);
+    border-bottom:1px solid transparent;transition:border-color .2s}
+  .searchwrap.stuck{border-bottom-color:var(--line)}
+  .search{position:relative;max-width:680px}
+  .search input{width:100%;padding:16px 48px 16px 18px;font-size:clamp(16px,1.6vw,18px);font-weight:550;
     border:1.5px solid var(--line);border-radius:14px;background:var(--field);color:var(--ink);
     box-shadow:var(--shadow);outline:none;transition:border-color .15s,box-shadow .15s}
   .search input::placeholder{color:var(--muted);font-weight:450}
   .search input:focus-visible{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-ink)}
   .search input:disabled{opacity:.55}
-  .search .ic{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:17px}
+  .search .ic{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px}
   .sugg{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 8px);background:var(--card);
-    border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden auto;
-    display:none;max-height:344px}
+    border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden auto;display:none;max-height:min(60vh,380px)}
   .sugg.on{display:block}
   .sugg div{padding:12px 15px;cursor:pointer;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;gap:12px;align-items:baseline}
@@ -71,66 +85,77 @@
   .sugg b{font-weight:620;font-size:14.5px}
   .sugg small{color:var(--muted);text-align:right;flex:0 0 auto;max-width:48%;font-size:12px}
 
-  .chips{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0 2px;min-height:32px;align-items:center}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 2px;align-items:center}
   .chips span{font-size:12.5px;color:var(--muted);margin-right:1px}
   .chips button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 13px;
-    font-size:13.5px;font-weight:560;color:var(--ink);cursor:pointer;transition:.12s}
-  .chips button:hover{border-color:var(--brand);color:var(--brand)}
+    font-size:13.5px;font-weight:560;color:var(--ink);cursor:pointer;transition:.14s}
+  .chips button:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+  .stat{font-size:12.5px;color:var(--muted);margin:14px 0 4px}
+  .stat b{color:var(--ink);font-weight:680}
 
-  /* savings thesis */
-  .banner{margin:22px 0 6px;padding:20px 20px 18px;border-radius:var(--radius);
-    background:var(--save-bg);border:1px solid color-mix(in srgb,var(--save) 26%,transparent)}
+  .banner{margin:24px 0 6px;padding:22px;border-radius:var(--radius);
+    background:radial-gradient(120% 140% at 0% 0%,var(--save-bg),transparent 70%),var(--card);
+    border:1px solid color-mix(in srgb,var(--save) 26%,transparent)}
   .banner .kick{font-size:11px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--save)}
-  .banner .big{font-size:clamp(32px,9vw,46px);font-weight:820;letter-spacing:-.03em;color:var(--save);
-    line-height:1.02;margin-top:3px}
-  .banner .sub{color:var(--ink);font-size:13.5px;margin-top:6px;opacity:.85}
+  .banner .big{font-size:clamp(38px,10vw,58px);font-weight:830;letter-spacing:-.03em;color:var(--save);line-height:1;margin-top:4px}
+  .banner .sub{color:var(--ink);font-size:14px;margin-top:8px;opacity:.85;max-width:52ch}
   .banner .sub b{font-weight:680}
 
   .lead{font-size:11px;font-weight:730;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
     margin:24px 3px 11px;display:flex;justify-content:space-between;gap:10px}
   .lead .rt{color:var(--muted);letter-spacing:.02em;text-transform:none;font-weight:550}
 
-  /* searched card */
-  .you{border:1.5px solid var(--brand);border-radius:var(--radius);padding:15px 16px;background:var(--card);
-    box-shadow:var(--shadow)}
+  .you{border:1.5px solid var(--brand);border-radius:var(--radius);padding:16px 17px;background:var(--card);box-shadow:var(--shadow)}
   .you .eyebrow{font-size:10.5px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
-  .rowline{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:3px}
+  .rowline{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:4px}
   .name{font-weight:650;font-size:16px;letter-spacing:-.01em}
   .mfr{color:var(--muted);font-size:12px;margin-top:2px}
   .amt{font-weight:770;font-size:19px;white-space:nowrap}
   .pack{color:var(--muted);font-size:11px;margin-top:1px;text-align:right}
 
-  /* price ladder */
   .ladder{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
-  .lrow{padding:13px 16px;border-top:1px solid var(--line)}
+  .lrow{padding:14px 17px;border-top:1px solid var(--line);transition:background .15s}
   .lrow:first-child{border-top:0}
   .lrow.you-row{background:color-mix(in srgb,var(--brand) 6%,transparent)}
   .ltop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-  .track{height:6px;border-radius:999px;background:color-mix(in srgb,var(--muted) 16%,transparent);margin-top:9px;overflow:hidden}
-  .fill{height:100%;border-radius:999px;background:var(--muted);transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .track{height:6px;border-radius:999px;background:color-mix(in srgb,var(--muted) 16%,transparent);margin-top:10px;overflow:hidden}
+  .fill{height:100%;border-radius:999px;background:var(--muted);width:0;transition:width .6s cubic-bezier(.2,.75,.2,1)}
   .fill.f-save{background:var(--save)}
   .fill.f-ja{background:var(--ja)}
   .chip{display:inline-block;font-size:10.5px;font-weight:730;letter-spacing:.03em;padding:2px 8px;border-radius:999px;margin-left:7px;vertical-align:1px}
   .chip.c-save{background:var(--save-bg);color:var(--save)}
   .chip.c-ja{background:var(--ja-bg);color:var(--ja)}
-  .delta{color:var(--save);font-weight:640;font-size:12px}
+  .delta{color:var(--save);font-weight:640;font-size:12px;margin-top:7px}
   .more{width:100%;padding:13px;border:1px dashed var(--line);background:transparent;color:var(--brand);
-    border-radius:12px;cursor:pointer;font-size:13.5px;font-weight:620;margin-top:10px}
-  .more:hover{border-color:var(--brand)}
+    border-radius:12px;cursor:pointer;font-size:13.5px;font-weight:620;margin-top:10px;transition:.14s}
+  .more:hover{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 5%,transparent)}
 
-  .disclaimer{background:transparent;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
-    font-size:12.5px;color:var(--muted);margin:18px 0}
+  .disclaimer{border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:12.5px;color:var(--muted);margin:18px 0}
   .disclaimer b{color:var(--ink);font-weight:660}
-  .empty{text-align:center;color:var(--muted);padding:44px 10px}
-  .empty .em{font-size:34px;opacity:.7}
-  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+  .empty{text-align:center;color:var(--muted);padding:52px 10px}
+  .empty .em{font-size:34px;opacity:.65;display:block;margin-bottom:8px}
+  footer{margin-top:32px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:12.5px;line-height:1.7}
   footer a{color:var(--brand);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--brand) 30%,transparent)}
   .ja-link{display:inline-block;margin-top:11px;color:var(--ja);border:1px solid color-mix(in srgb,var(--ja) 30%,transparent);
-    padding:9px 14px;border-radius:11px;text-decoration:none;font-weight:620;font-size:13.5px}
+    padding:9px 14px;border-radius:11px;text-decoration:none;font-weight:620;font-size:13.5px;transition:.14s}
+  .ja-link:hover{background:var(--ja-bg)}
   .spin{display:inline-block;width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--brand);
     border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .reveal{animation:rise .4s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* responsive */
+  @media (min-width:900px){
+    .hero{padding:52px 0 8px}
+    .motif{display:block}
+    .searchwrap{margin-top:30px}
+  }
+  @media (hover:hover) and (pointer:fine){
+    .lrow:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
+    .you:hover,.ladder:hover{box-shadow:0 1px 0 rgba(19,26,24,.04),0 20px 44px -22px rgba(19,26,24,.4)}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.fill{transition:none!important}}
 </style>
 </head>
 <body>
@@ -140,44 +165,57 @@
     <button class="theme-btn" id="theme" title="Toggle theme" aria-label="Toggle theme">◐</button>
   </header>
 
-  <h1 class="display">Same medicine.<br><span class="u">Up to 90% less.</span></h1>
-  <div class="tag">Search any Indian brand. See every same-composition alternative, ranked by real <b>per-unit price</b> — Jan Aushadhi included.</div>
-  <div class="stat" id="stat"><span class="spin"></span>Loading…</div>
+  <section class="hero">
+    <div class="motif" aria-hidden="true">
+      <i style="width:82%"></i><i style="width:58%"></i><i style="width:40%"></i><i style="width:27%"></i><i style="width:16%"></i>
+    </div>
+    <div class="col">
+      <span class="eyebrow-top"><span class="dot"></span>230,000+ medicines · updated weekly</span>
+      <h1 class="display">Same medicine.<br><span class="u">Up to 90% less.</span></h1>
+      <p class="tag">Search any Indian brand and see every same-composition alternative, ranked by real <b>per-unit price</b> — Jan Aushadhi included.</p>
+    </div>
+  </section>
 
-  <div class="search">
-    <input id="q" type="text" autocomplete="off" disabled placeholder="Loading…" aria-label="Search medicine brand">
-    <span class="ic">⌕</span>
-    <div class="sugg" id="sugg"></div>
+  <div class="searchwrap" id="searchwrap">
+    <div class="search col">
+      <input id="q" type="text" autocomplete="off" disabled placeholder="Loading…" aria-label="Search medicine brand">
+      <span class="ic">⌕</span>
+      <div class="sugg" id="sugg"></div>
+    </div>
   </div>
 
-  <div class="chips" id="chips">
-    <span>Try</span>
-    <button data-q="Augmentin">Augmentin</button>
-    <button data-q="Pan 40">Pan 40</button>
-    <button data-q="Azithral">Azithral</button>
-    <button data-q="Telma">Telma</button>
-    <button data-q="Crocin">Crocin</button>
+  <div class="col">
+    <div class="chips" id="chips">
+      <span>Try</span>
+      <button data-q="Augmentin">Augmentin</button>
+      <button data-q="Pan 40">Pan 40</button>
+      <button data-q="Azithral">Azithral</button>
+      <button data-q="Telma">Telma</button>
+      <button data-q="Crocin">Crocin</button>
+    </div>
+    <div class="stat" id="stat"><span class="spin"></span>Loading…</div>
+
+    <div id="out"></div>
+
+    <div class="disclaimer" id="disc" style="display:none">
+      <b>Confirm exact composition with your doctor or pharmacist before switching.</b>
+      Grouping uses primary salts; some products may carry extra actives. Comparison is by
+      per-unit price (pack sizes differ). Prices are dataset/scheme snapshots — verify on the pack. Not medical advice.
+    </div>
+
+    <footer>
+      <div>An open-source information tool. It does not sell medicine or give medical advice.</div>
+      <a class="ja-link" href="https://janaushadhi.gov.in/KendraDetails.aspx" target="_blank" rel="noopener">Find your nearest Jan Aushadhi Kendra →</a>
+      <div style="margin-top:12px" id="src"></div>
+    </footer>
   </div>
-
-  <div id="out"></div>
-
-  <div class="disclaimer" id="disc" style="display:none">
-    <b>Confirm exact composition with your doctor or pharmacist before switching.</b>
-    Grouping uses primary salts; some products may carry extra actives. Comparison is by
-    per-unit price (pack sizes differ). Prices are dataset/scheme snapshots — verify on the pack. Not medical advice.
-  </div>
-
-  <footer>
-    <div>An open-source information tool. It does not sell medicine or give medical advice.</div>
-    <a class="ja-link" href="https://janaushadhi.gov.in/KendraDetails.aspx" target="_blank" rel="noopener">Find your nearest Jan Aushadhi Kendra →</a>
-    <div style="margin-top:12px" id="src"></div>
-  </footer>
 </div>
 
 <script>
 const money=n=>"₹"+(n>=100?n.toFixed(0):n.toFixed(2));
 const perUnit=(u,uc)=>money(u)+"/"+(uc==="ml"?"ml":"unit");
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+const RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
 
 function norm(s){return s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
 function pfxOf(s){let t=s.toLowerCase().replace(/[^a-z0-9]/g,"");if(!t)return"__";if(t.length===1)return t+"_";return t.slice(0,2);}
@@ -226,75 +264,80 @@ function renderSugg(list){
 }
 
 let searchedName="", curItems=[], curGroup=null;
-async function pick(entry){                      // entry = [brand, salt, gid]
+async function pick(entry){
   inp.value=entry[0]; searchedName=entry[0];
-  suggBox.classList.remove("on");
+  suggBox.classList.remove("on"); inp.blur();
   out.innerHTML=`<div class="empty"><span class="spin"></span>Loading options…</div>`;
   const g=await getGroup(entry[2]);
   if(!g){out.innerHTML=`<div class="empty">Couldn't load this group. Try another search.</div>`;return;}
   curGroup=g;
   curItems=g.items.map(it=>({b:it[0],mf:it[1],m:it[2],u:it[3],p:it[4],kind:it[5]}));
   render();
-  window.scrollTo({top:0,behavior:"smooth"});
+  document.getElementById("searchwrap").scrollIntoView({block:"start"});
 }
 
-function ladderRow(d, maxU, refUnit, isCheapest, isYou){
+function animateCount(el,to){
+  if(RM){el.textContent=to+"%";return;}
+  const dur=700,st=performance.now();
+  (function f(t){const p=Math.min(1,(t-st)/dur);el.textContent=Math.round((1-Math.pow(1-p,3))*to)+"%";if(p<1)requestAnimationFrame(f);})(st);
+}
+function fillBars(scope){
+  requestAnimationFrame(()=>scope.querySelectorAll(".fill").forEach(el=>{el.style.width=el.dataset.w+"%";}));
+}
+
+function ladderRow(d, maxU, refUnit, isCheapest, i){
   const w=Math.max(6,Math.round(d.u/maxU*100));
   const fill=isCheapest?"f-save":d.kind==="jan-aushadhi"?"f-ja":"";
   const chips=(isCheapest?'<span class="chip c-save">Cheapest</span>':'')+
               (d.kind==="jan-aushadhi"?'<span class="chip c-ja">Jan Aushadhi</span>':'');
   const saved=refUnit!=null && d.u<refUnit ? Math.round((1-d.u/refUnit)*100):0;
-  return `<div class="lrow${isYou?' you-row':''}">
+  const delay=RM?0:Math.min(i*35,420);
+  return `<div class="lrow">
     <div class="ltop">
       <div><span class="name">${esc(d.b)}</span>${chips}<div class="mfr">${esc(d.mf)}</div></div>
       <div><div class="amt num">${perUnit(d.u,curGroup.uc)}</div><div class="pack num">${money(d.m)} · ${esc(d.p)}</div></div>
     </div>
-    <div class="track"><div class="fill ${fill}" style="width:${w}%"></div></div>
+    <div class="track"><div class="fill ${fill}" data-w="${w}" style="transition-delay:${delay}ms"></div></div>
     ${saved>0?`<div class="delta">↓ ${saved}% vs ${esc(searchedName)}</div>`:''}
   </div>`;
 }
 
 function render(){
-  const items=curItems;                                   // sorted cheapest→dearest
-  const maxU=items[items.length-1].u || 1;
+  const items=curItems, maxU=items[items.length-1].u||1;
   const sIdx=Math.max(0,items.findIndex(x=>x.b===searchedName));
   const searched=items[sIdx], cheapest=items[0];
   let html="";
-
-  if(cheapest.b!==searched.b && searched.u>0){
-    const save=Math.round((1-cheapest.u/searched.u)*100);
-    if(save>0) html+=`<div class="banner">
-      <div class="kick">You could save</div>
-      <div class="big num">${save}%</div>
-      <div class="sub">Same salt as <b>${esc(searched.b)}</b> at ${perUnit(searched.u,curGroup.uc)}. Cheapest is <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div>
-    </div>`;
-  }
-
-  html+=`<div class="lead">You searched</div>`;
-  html+=`<div class="you">
-    <div class="eyebrow">${esc(curGroup.s)}</div>
-    <div class="rowline"><div><span class="name">${esc(searched.b)}</span><div class="mfr">${esc(searched.mf)}</div></div>
-      <div><div class="amt num">${perUnit(searched.u,curGroup.uc)}</div><div class="pack num">${money(searched.m)} · ${esc(searched.p)}</div></div></div>
+  let save=0;
+  if(cheapest.b!==searched.b && searched.u>0) save=Math.round((1-cheapest.u/searched.u)*100);
+  if(save>0) html+=`<div class="banner reveal">
+    <div class="kick">You could save</div>
+    <div class="big num" id="bignum">0%</div>
+    <div class="sub">Same salt as <b>${esc(searched.b)}</b> at ${perUnit(searched.u,curGroup.uc)}. Cheapest is <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div>
   </div>`;
+
+  html+=`<div class="lead">You searched</div>
+    <div class="you reveal"><div class="eyebrow">${esc(curGroup.s)}</div>
+    <div class="rowline"><div><span class="name">${esc(searched.b)}</span><div class="mfr">${esc(searched.mf)}</div></div>
+      <div><div class="amt num">${perUnit(searched.u,curGroup.uc)}</div><div class="pack num">${money(searched.m)} · ${esc(searched.p)}</div></div></div></div>`;
 
   const alts=items.filter((_,i)=>i!==sIdx);
   if(alts.length){
     const first=Math.min(alts.length,40);
     html+=`<div class="lead">Same salt · cheapest first<span class="rt">${alts.length} alternative${alts.length>1?'s':''}</span></div>`;
-    html+=`<div class="ladder" id="ladder">`+
-      alts.slice(0,first).map(x=>ladderRow(x,maxU,searched.u, x.b===cheapest.b && cheapest.b!==searched.b, false)).join("")+`</div>`;
+    html+=`<div class="ladder reveal" id="ladder">`+
+      alts.slice(0,first).map((x,i)=>ladderRow(x,maxU,searched.u,x.b===cheapest.b&&cheapest.b!==searched.b,i)).join("")+`</div>`;
     if(alts.length>first) html+=`<button class="more" id="more">Show ${alts.length-first} more</button>`;
-    out.innerHTML=html; disc.style.display="block";
-    const mb=document.getElementById("more");
-    if(mb) mb.onclick=()=>{
-      document.getElementById("ladder").insertAdjacentHTML("beforeend",
-        alts.slice(first).map(x=>ladderRow(x,maxU,searched.u,false,false)).join(""));
-      mb.remove();
-    };
-  }else{
-    html+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
-    out.innerHTML=html; disc.style.display="block";
-  }
+  }else html+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
+
+  out.innerHTML=html; disc.style.display="block";
+  const bn=document.getElementById("bignum"); if(bn) animateCount(bn,save);
+  const ladder=document.getElementById("ladder"); if(ladder) fillBars(ladder);
+  const mb=document.getElementById("more");
+  if(mb) mb.onclick=()=>{
+    const rest=alts.slice(40);
+    ladder.insertAdjacentHTML("beforeend",rest.map((x,i)=>ladderRow(x,maxU,searched.u,false,i)).join(""));
+    fillBars(ladder); mb.remove();
+  };
 }
 
 inp.addEventListener("input",onType);
@@ -303,6 +346,7 @@ inp.addEventListener("keydown",e=>{
   if(e.key==="ArrowDown"){e.preventDefault();hlIdx=Math.min(hlIdx+1,curSugg.length-1);}
   else if(e.key==="ArrowUp"){e.preventDefault();hlIdx=Math.max(hlIdx-1,0);}
   else if(e.key==="Enter"){e.preventDefault();if(curSugg.length)pick(curSugg[hlIdx>=0?hlIdx:0]);return;}
+  else if(e.key==="Escape"){suggBox.classList.remove("on");return;}
   else return;
   [...suggBox.children].forEach((el,i)=>el.classList.toggle("hl",i===hlIdx));
 });
@@ -318,13 +362,19 @@ document.getElementById("theme").onclick=()=>{
   document.documentElement.setAttribute("data-theme",next);
 };
 
+/* sticky search shadow when pinned */
+const sw=document.getElementById("searchwrap");
+const sentinel=document.createElement("div"); sentinel.style.cssText="position:absolute;top:0;height:1px;width:1px";
+document.querySelector(".hero").appendChild(sentinel);
+new IntersectionObserver(([e])=>sw.classList.toggle("stuck",!e.isIntersecting),{rootMargin:"-1px 0px 0px 0px"}).observe(sentinel);
+
 fetch("data/meta.json").then(r=>r.json()).then(m=>{
   META=m; BUCKETS=m.buckets||256;
   stat.innerHTML=`Searching <b class="num">${m.count.toLocaleString()}</b> medicines · <b class="num">${m.groups.toLocaleString()}</b> salt groups · updated ${m.generated.slice(0,10)}`;
   const srcs=(m.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(" · ");
   document.getElementById("src").innerHTML=`Data: ${srcs} · regenerated weekly. Not for clinical use.`;
-  inp.disabled=false; inp.placeholder="Search a brand — Augmentin, Pan 40, Azithral…"; inp.focus();
-  out.innerHTML=`<div class="empty"><div class="em">⌕</div>Search a brand to reveal cheaper same-salt options.</div>`;
+  inp.disabled=false; inp.placeholder="Search a brand — Augmentin, Pan 40, Azithral…";
+  out.innerHTML=`<div class="empty"><span class="em">⌕</span>Search a brand to reveal cheaper same-salt options.</div>`;
 }).catch(e=>{stat.innerHTML=`Couldn't load data (${esc(e.message)}). Refresh the page.`;});
 </script>
 </body>
