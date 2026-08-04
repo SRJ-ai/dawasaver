@@ -27,12 +27,12 @@ jobs:
 
       - name: Commit if changed
         run: |
-          if git diff --quiet -- data/drugs.json; then
+          git add -A data
+          if git diff --cached --quiet -- data; then
             echo "No data changes."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/drugs.json
-          git commit -m "chore(data): weekly refresh of drugs.json"
+          git commit -m "chore(data): weekly refresh"
           git push
