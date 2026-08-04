@@ -12,7 +12,7 @@ Solves a real India problem (from Razorpay's *Fix My Itch*):
 
 ## Features
 
-- 🔎 Fuzzy, typo-tolerant brand search (`crocn` → Crocin)
+- 🔎 Fuzzy, typo-tolerant search by **brand** (`crocn` → Crocin) **or generic/salt name** (`paracetamol`, `cetirizine` → the whole group, ranked by popularity)
 - ⚖️ **Per-unit** price comparison (a strip of 10 vs a strip of 15, compared honestly)
 - 💸 Savings hero: how much you'd save switching to the cheapest same-salt brand
 - 🧾 ~1000 medicines across 50+ salt groups, from **real open data**
