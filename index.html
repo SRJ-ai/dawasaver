@@ -194,11 +194,13 @@
   <div class="col">
     <div class="chips" id="chips">
       <span>Try</span>
-      <button data-q="Augmentin">Augmentin</button>
+      <button data-q="Paracetamol">Paracetamol</button>
+      <button data-q="Cetirizine">Cetirizine</button>
+      <button data-q="Amoxycillin">Amoxicillin</button>
+      <button data-q="Dolo">Dolo</button>
+      <button data-q="Crocin">Crocin</button>
       <button data-q="Pan 40">Pan 40</button>
       <button data-q="Azithral">Azithral</button>
-      <button data-q="Telma">Telma</button>
-      <button data-q="Crocin">Crocin</button>
     </div>
     <div class="stat" id="stat"><span class="spin"></span>Loading…</div>
   </div>
@@ -247,37 +249,56 @@ async function getIdx(pfx){
   try{const r=await fetch("data/idx/"+pfx+".json");idxCache[pfx]=r.ok?await r.json():[];}catch{idxCache[pfx]=[];}
   return idxCache[pfx];
 }
+const genCache={};
+async function getGen(pfx){
+  if(pfx in genCache) return genCache[pfx];
+  try{const r=await fetch("data/gen/"+pfx+".json");genCache[pfx]=r.ok?await r.json():[];}catch{genCache[pfx]=[];}
+  return genCache[pfx];
+}
 async function getGroup(gid){
   const bucket=gid%BUCKETS;
   if(!(bucket in grpCache)){const r=await fetch("data/grp/"+bucket+".json");grpCache[bucket]=r.ok?await r.json():{};}
   return grpCache[bucket][gid];
 }
 
+async function candidates(q){
+  const pfx=pfxOf(q);
+  const [bi,ge]=await Promise.all([getIdx(pfx),getGen(pfx)]);
+  const cand=[];
+  for(const e of bi){const s=score(q,e[0]); if(s>28) cand.push({s,o:{t:"b",b:e[0],salt:e[1],gid:e[2]}});}
+  for(const e of ge){const base=score(q,e[0]); if(base>28){const n=e[2]||1; cand.push({s:base+Math.min(22,Math.log2(n+1)*3),o:{t:"g",salt:e[0],gid:e[1]}});}}
+  cand.sort((a,b)=>b.s-a.s);
+  const seen=new Set(), out=[];
+  for(const c of cand){const k=c.o.t+"|"+(c.o.t==="b"?c.o.b:c.o.gid); if(seen.has(k))continue; seen.add(k); out.push(c.o); if(out.length>=8)break;}
+  return out;
+}
 let reqId=0;
 async function onType(){
   const q=inp.value.trim();
   if(q.length<2){suggBox.classList.remove("on");return;}
   const my=++reqId;
-  const arr=await getIdx(pfxOf(q));
+  const list=await candidates(q);
   if(my!==reqId) return;
-  const list=arr.map(e=>({e,s:score(q,e[0])})).filter(x=>x.s>28).sort((a,b)=>b.s-a.s).slice(0,8).map(x=>x.e);
   renderSugg(list);
 }
 let hlIdx=-1, curSugg=[];
 function renderSugg(list){
   curSugg=list; hlIdx=-1;
   if(!list.length){suggBox.classList.remove("on");suggBox.innerHTML="";return;}
-  suggBox.innerHTML=list.map((e,i)=>`<div data-i="${i}"><b>${esc(e[0])}</b><small>${esc(e[1])}</small></div>`).join("");
+  suggBox.innerHTML=list.map((o,i)=> o.t==="g"
+    ? `<div data-i="${i}"><b>${esc(o.salt)}</b><small>generic · all brands</small></div>`
+    : `<div data-i="${i}"><b>${esc(o.b)}</b><small>${esc(o.salt)}</small></div>`).join("");
   suggBox.classList.add("on");
   [...suggBox.children].forEach(el=>el.onclick=()=>pick(curSugg[+el.dataset.i]));
 }
 
-let searchedName="", curItems=[], curGroup=null;
-async function pick(entry){
-  inp.value=entry[0]; searchedName=entry[0];
+let searchedName="", genericSalt=null, curItems=[], curGroup=null;
+async function pick(o){
+  if(o.t==="g"){genericSalt=o.salt; searchedName=""; inp.value=o.salt;}
+  else {genericSalt=null; searchedName=o.b; inp.value=o.b;}
   suggBox.classList.remove("on"); inp.blur();
   out.innerHTML=`<div class="empty"><span class="spin"></span>Loading options…</div>`;
-  const g=await getGroup(entry[2]);
+  const g=await getGroup(o.gid);
   if(!g){out.innerHTML=`<div class="empty">Couldn't load this group. Try another search.</div>`;return;}
   curGroup=g;
   curItems=g.items.map(it=>({b:it[0],mf:it[1],m:it[2],u:it[3],p:it[4],kind:it[5]}));
@@ -294,7 +315,7 @@ function fillBars(scope){
   requestAnimationFrame(()=>scope.querySelectorAll(".fill").forEach(el=>{el.style.width=el.dataset.w+"%";}));
 }
 
-function ladderRow(d, maxU, refUnit, isCheapest, i){
+function ladderRow(d, maxU, refUnit, refLabel, isCheapest, i){
   const w=Math.max(6,Math.round(d.u/maxU*100));
   const fill=isCheapest?"f-save":d.kind==="jan-aushadhi"?"f-ja":"";
   const chips=(isCheapest?'<span class="chip c-save">Cheapest</span>':'')+
@@ -307,46 +328,61 @@ function ladderRow(d, maxU, refUnit, isCheapest, i){
       <div><div class="amt num">${perUnit(d.u,curGroup.uc)}</div><div class="pack num">${money(d.m)} · ${esc(d.p)}</div></div>
     </div>
     <div class="track"><div class="fill ${fill}" data-w="${w}" style="transition-delay:${delay}ms"></div></div>
-    ${saved>0?`<div class="delta">↓ ${saved}% vs ${esc(searchedName)}</div>`:''}
+    ${saved>0?`<div class="delta">↓ ${saved}% vs ${esc(refLabel)}</div>`:''}
   </div>`;
 }
 
 function render(){
   const items=curItems, maxU=items[items.length-1].u||1;
-  const sIdx=Math.max(0,items.findIndex(x=>x.b===searchedName));
-  const searched=items[sIdx], cheapest=items[0];
-  let save=0;
-  if(cheapest.b!==searched.b && searched.u>0) save=Math.round((1-cheapest.u/searched.u)*100);
+  const cheapest=items[0], dearest=items[items.length-1];
+  let left="", right="", bigVal=0;
+  let ladderItems, refUnit, refLabel;
 
-  let left="";
-  if(save>0) left+=`<div class="banner reveal">
-    <div class="kick">You could save</div>
-    <div class="big num" id="bignum">0%</div>
-    <div class="sub">Same salt as <b>${esc(searched.b)}</b> at ${perUnit(searched.u,curGroup.uc)}. Cheapest is <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div>
-  </div>`;
-  left+=`<div class="lead">You searched</div>
-    <div class="you reveal"><div class="eyebrow">${esc(curGroup.s)}</div>
-    <div class="rowline"><div><span class="name">${esc(searched.b)}</span><div class="mfr">${esc(searched.mf)}</div></div>
-      <div><div class="amt num">${perUnit(searched.u,curGroup.uc)}</div><div class="pack num">${money(searched.m)} · ${esc(searched.p)}</div></div></div></div>`;
+  if(genericSalt){
+    // generic/salt search — no single searched brand; show the whole group
+    bigVal = dearest.u>0 ? Math.round((1-cheapest.u/dearest.u)*100) : 0;
+    if(bigVal>0) left+=`<div class="banner reveal">
+      <div class="kick">Price gap for this salt</div>
+      <div class="big num" id="bignum">0%</div>
+      <div class="sub">Same composition, <b>${items.length}</b> brands from <b>${perUnit(cheapest.u,curGroup.uc)}</b> to <b>${perUnit(dearest.u,curGroup.uc)}</b>. Cheapest: <b>${esc(cheapest.b)}</b>.</div>
+    </div>`;
+    left+=`<div class="lead">Generic</div>
+      <div class="you reveal"><div class="eyebrow">Composition</div>
+      <div class="rowline"><div><span class="name">${esc(curGroup.s)}</span><div class="mfr">${items.length} brand${items.length>1?'s':''} available</div></div>
+        <div><div class="amt num">${perUnit(cheapest.u,curGroup.uc)}</div><div class="pack num">from cheapest</div></div></div></div>`;
+    ladderItems=items; refUnit=dearest.u; refLabel="priciest";
+    right+=`<div class="lead">All brands · cheapest first<span class="rt">${items.length} product${items.length>1?'s':''}</span></div>`;
+  }else{
+    const sIdx=Math.max(0,items.findIndex(x=>x.b===searchedName));
+    const searched=items[sIdx];
+    bigVal = (cheapest.b!==searched.b && searched.u>0) ? Math.round((1-cheapest.u/searched.u)*100) : 0;
+    if(bigVal>0) left+=`<div class="banner reveal">
+      <div class="kick">You could save</div>
+      <div class="big num" id="bignum">0%</div>
+      <div class="sub">Same salt as <b>${esc(searched.b)}</b> at ${perUnit(searched.u,curGroup.uc)}. Cheapest is <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div>
+    </div>`;
+    left+=`<div class="lead">You searched</div>
+      <div class="you reveal"><div class="eyebrow">${esc(curGroup.s)}</div>
+      <div class="rowline"><div><span class="name">${esc(searched.b)}</span><div class="mfr">${esc(searched.mf)}</div></div>
+        <div><div class="amt num">${perUnit(searched.u,curGroup.uc)}</div><div class="pack num">${money(searched.m)} · ${esc(searched.p)}</div></div></div></div>`;
+    ladderItems=items.filter((_,i)=>i!==sIdx); refUnit=searched.u; refLabel=searchedName;
+    right+=`<div class="lead">Same salt · cheapest first<span class="rt">${ladderItems.length} alternative${ladderItems.length!==1?'s':''}</span></div>`;
+  }
 
-  const alts=items.filter((_,i)=>i!==sIdx);
-  let right="";
-  if(alts.length){
-    const first=Math.min(alts.length,40);
-    right+=`<div class="lead">Same salt · cheapest first<span class="rt">${alts.length} alternative${alts.length>1?'s':''}</span></div>`;
+  if(ladderItems.length){
+    const first=Math.min(ladderItems.length,40);
     right+=`<div class="ladder reveal" id="ladder">`+
-      alts.slice(0,first).map((x,i)=>ladderRow(x,maxU,searched.u,x.b===cheapest.b&&cheapest.b!==searched.b,i)).join("")+`</div>`;
-    if(alts.length>first) right+=`<button class="more" id="more">Show ${alts.length-first} more</button>`;
+      ladderItems.slice(0,first).map((x,i)=>ladderRow(x,maxU,refUnit,refLabel,x.b===cheapest.b,i)).join("")+`</div>`;
+    if(ladderItems.length>first) right+=`<button class="more" id="more">Show ${ladderItems.length-first} more</button>`;
   }else right+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
 
   out.innerHTML=`<div class="results"><div class="pinned">${left}</div><div class="stream">${right}</div></div>`;
   disc.style.display="block";
-  const bn=document.getElementById("bignum"); if(bn) animateCount(bn,save);
+  const bn=document.getElementById("bignum"); if(bn) animateCount(bn,bigVal);
   const ladder=document.getElementById("ladder"); if(ladder) fillBars(ladder);
   const mb=document.getElementById("more");
   if(mb) mb.onclick=()=>{
-    const rest=alts.slice(40);
-    ladder.insertAdjacentHTML("beforeend",rest.map((x,i)=>ladderRow(x,maxU,searched.u,false,i)).join(""));
+    ladder.insertAdjacentHTML("beforeend",ladderItems.slice(40).map((x,i)=>ladderRow(x,maxU,refUnit,refLabel,false,i)).join(""));
     fillBars(ladder); mb.remove();
   };
 }
@@ -363,9 +399,7 @@ inp.addEventListener("keydown",e=>{
 });
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))suggBox.classList.remove("on");});
 document.querySelectorAll(".chips button").forEach(b=>b.onclick=async()=>{
-  inp.value=b.dataset.q; const arr=await getIdx(pfxOf(b.dataset.q));
-  const best=arr.map(e=>({e,s:score(b.dataset.q,e[0])})).sort((a,b)=>b.s-a.s)[0];
-  if(best) pick(best.e);
+  inp.value=b.dataset.q; const list=await candidates(b.dataset.q); if(list.length) pick(list[0]);
 });
 document.getElementById("theme").onclick=()=>{
   const cur=document.documentElement.getAttribute("data-theme");

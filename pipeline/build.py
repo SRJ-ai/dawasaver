@@ -221,8 +221,10 @@ def build():
         shutil.rmtree(DATA)
     os.makedirs(os.path.join(DATA, "idx"))
     os.makedirs(os.path.join(DATA, "grp"))
+    os.makedirs(os.path.join(DATA, "gen"))
 
-    idx = {}                     # pfx -> [[b, salt, gid], ...]
+    idx = {}                     # pfx -> [[b, salt, gid], ...]  (brand search)
+    gen = {}                     # pfx -> {(salt, gid)}          (generic/salt search)
     bucket_files = {}            # bucket -> {gid: {...}}
     gid = 0
     total_items = 0
@@ -246,10 +248,24 @@ def build():
         for it in items:
             idx.setdefault(pfx_of(it["b"]), []).append([it["b"], g["salt"], gid])
             total_items += 1
+        # generic/salt search: index the group under each salt component's name,
+        # so "paracetamol" or "clavulanic" jumps straight to the group. Skip
+        # strength-less "(NA)" compositions (low value). Carry brand count so the
+        # client can rank common strengths above rare ones.
+        if "(na)" not in g["salt"].lower():
+            for token in g["salt"].split(" + "):
+                name = token.split("(")[0].strip()
+                if name:
+                    gen.setdefault(pfx_of(name), set()).add((g["salt"], gid, len(items)))
 
     for pfx, arr in idx.items():
         arr.sort(key=lambda e: e[0].lower())
         with open(os.path.join(DATA, "idx", f"{pfx}.json"), "w", encoding="utf-8") as f:
+            json.dump(arr, f, ensure_ascii=False, separators=(",", ":"))
+
+    for pfx, s in gen.items():
+        arr = sorted(([disp, gid_, n] for disp, gid_, n in s), key=lambda e: -e[2])
+        with open(os.path.join(DATA, "gen", f"{pfx}.json"), "w", encoding="utf-8") as f:
             json.dump(arr, f, ensure_ascii=False, separators=(",", ":"))
 
     for bucket, obj in bucket_files.items():
@@ -262,6 +278,7 @@ def build():
         "groups": gid,
         "buckets": BUCKETS,
         "index_shards": len(idx),
+        "gen_shards": len(gen),
         "sources": SOURCES,
         "note": "Comparison by per-unit price. Salt grouping uses primary composition; "
                 "confirm exact composition with a pharmacist. Not medical advice.",
@@ -274,7 +291,7 @@ def build():
 
     print(
         f"products={total_items:,} groups={gid:,} "
-        f"idx_shards={len(idx):,} buckets={len(bucket_files)} -> {os.path.relpath(DATA)}",
+        f"idx_shards={len(idx):,} gen_shards={len(gen):,} buckets={len(bucket_files)} -> {os.path.relpath(DATA)}",
         file=sys.stderr,
     )
 
