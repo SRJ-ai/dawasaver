@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(gh --version 2>$null)",
+      "PowerShell(gh auth status 2>&1)",
+      "Bash(python -m http.server 8765)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8765/index.html)",
+      "Bash(node -e ' *)",
+      "Bash(kill %1)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)",
+      "Bash(curl -s https://srj-ai.github.io/dawasaver/)",
+      "WebSearch",
+      "Bash(curl -sI https://raw.githubusercontent.com/junioralive/Indian-Medicine-Dataset/main/DATA/indian_medicine_data.csv)",
+      "Bash(python pipeline/build.py)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=SRJ-ai -c user.email=kvamsi@lumenor.in commit -qm 'feat: wire real open drug data \\(1000 meds\\) + weekly refresh pipeline *)",
+      "Bash(git push *)"
+    ]
+  }
+}

@@ -4,23 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DawaSaver — same salt, lower price</title>
-<meta name="description" content="Search a medicine brand and instantly see same-composition generic & Jan Aushadhi alternatives that cost less.">
+<meta name="description" content="Search a medicine brand and see same-composition alternatives ranked by real per-unit price. Real open data, 1000+ medicines.">
 <style>
   :root{
     --bg:#f6f8fb; --card:#ffffff; --ink:#0f172a; --sub:#64748b; --line:#e6eaf0;
     --brand:#0d9488; --brand-ink:#0b7c72; --accent:#f97316; --good:#16a34a;
-    --good-bg:#e8f7ee; --ja:#7c3aed; --ja-bg:#f1ebfe; --shadow:0 6px 24px rgba(15,23,42,.06);
-    --radius:16px;
+    --good-bg:#e8f7ee; --shadow:0 6px 24px rgba(15,23,42,.06); --radius:16px;
   }
   @media (prefers-color-scheme:dark){
     :root{--bg:#0b1220;--card:#121a2b;--ink:#e8edf5;--sub:#93a2b8;--line:#1f2a3d;
-      --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--ja:#c4b5fd;--ja-bg:#241a3a;
-      --shadow:0 6px 24px rgba(0,0,0,.35);}
+      --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--shadow:0 6px 24px rgba(0,0,0,.35);}
   }
   :root[data-theme="dark"]{--bg:#0b1220;--card:#121a2b;--ink:#e8edf5;--sub:#93a2b8;--line:#1f2a3d;
-    --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--ja:#c4b5fd;--ja-bg:#241a3a;--shadow:0 6px 24px rgba(0,0,0,.35);}
+    --brand:#2dd4bf;--brand-ink:#5eead4;--good:#34d399;--good-bg:#0f2a20;--shadow:0 6px 24px rgba(0,0,0,.35);}
   :root[data-theme="light"]{--bg:#f6f8fb;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e6eaf0;
-    --brand:#0d9488;--brand-ink:#0b7c72;--good:#16a34a;--good-bg:#e8f7ee;--ja:#7c3aed;--ja-bg:#f1ebfe;--shadow:0 6px 24px rgba(15,23,42,.06);}
+    --brand:#0d9488;--brand-ink:#0b7c72;--good:#16a34a;--good-bg:#e8f7ee;--shadow:0 6px 24px rgba(15,23,42,.06);}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -30,43 +28,44 @@
   .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.02em}
   .logo .pill{background:var(--brand);color:#fff;border-radius:10px;padding:4px 9px;font-size:18px}
   .theme-btn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;font-size:15px;box-shadow:var(--shadow)}
-  .tag{color:var(--sub);font-size:15px;margin:2px 0 18px}
+  .tag{color:var(--sub);font-size:15px;margin:2px 0 8px}
   .tag b{color:var(--brand-ink)}
+  .stat{font-size:12px;color:var(--sub);margin:0 0 16px}
 
   .search{position:relative}
   .search input{width:100%;padding:16px 46px 16px 16px;font-size:17px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);box-shadow:var(--shadow);outline:none}
   .search input:focus{border-color:var(--brand)}
+  .search input:disabled{opacity:.6}
   .search .ic{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:18px}
-  .sugg{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:none}
+  .sugg{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:none;max-height:340px;overflow-y:auto}
   .sugg.on{display:block}
   .sugg div{padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
   .sugg div:last-child{border-bottom:0}
   .sugg div:hover,.sugg div.hl{background:color-mix(in srgb,var(--brand) 10%,transparent)}
-  .sugg small{color:var(--sub)}
+  .sugg small{color:var(--sub);text-align:right;flex:0 0 auto;max-width:45%}
 
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
-  .chips span{font-size:13px;color:var(--sub);margin-right:2px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;min-height:34px}
+  .chips span{font-size:13px;color:var(--sub);margin-right:2px;align-self:center}
   .chips button{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--ink);cursor:pointer}
   .chips button:hover{border-color:var(--brand);color:var(--brand-ink)}
 
   .hero{margin:20px 0 8px;background:linear-gradient(135deg,var(--good-bg),transparent);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
   .hero .big{font-size:30px;font-weight:800;color:var(--good);letter-spacing:-.02em}
-  .hero .sub{color:var(--sub);font-size:14px}
+  .hero .sub{color:var(--sub);font-size:14px;margin-top:4px}
 
   .section-t{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin:22px 4px 10px}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
   .row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .brand-name{font-weight:700;font-size:18px}
-  .salt{color:var(--sub);font-size:14px;margin-top:2px}
+  .brand-name{font-weight:700;font-size:17px}
+  .salt{color:var(--sub);font-size:13px;margin-top:2px}
   .mfr{color:var(--sub);font-size:12px;margin-top:6px}
   .price{text-align:right;white-space:nowrap}
   .price .amt{font-weight:800;font-size:20px}
   .price .unit{color:var(--sub);font-size:12px}
+  .price .pack{color:var(--sub);font-size:11px;margin-top:2px}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:8px}
-  .b-brand{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
-  .b-gen{background:var(--good-bg);color:var(--good)}
-  .b-ja{background:var(--ja-bg);color:var(--ja)}
+  .b-low{background:var(--good-bg);color:var(--good)}
   .save{color:var(--good);font-weight:700;font-size:13px;margin-top:6px}
   .searched{border:1.5px solid var(--brand)}
   .searched .searched-tag{font-size:11px;font-weight:700;color:var(--brand-ink);text-transform:uppercase;letter-spacing:.06em}
@@ -76,7 +75,9 @@
   .empty .em{font-size:40px}
   footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;color:var(--sub);font-size:13px}
   footer a{color:var(--brand-ink)}
-  .ja-link{display:inline-block;margin-top:10px;background:var(--ja-bg);color:var(--ja);border:1px solid color-mix(in srgb,var(--ja) 30%,transparent);padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px}
+  .ja-link{display:inline-block;margin-top:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand-ink);border:1px solid color-mix(in srgb,var(--brand) 30%,transparent);padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -85,236 +86,99 @@
     <div class="logo"><span class="pill">₹</span>DawaSaver</div>
     <button class="theme-btn" id="theme" title="Toggle theme">🌓</button>
   </header>
-  <div class="tag">Type a medicine brand. See the <b>same-salt</b> generic &amp; Jan Aushadhi options that cost less.</div>
+  <div class="tag">Type a medicine brand. See <b>same-composition</b> alternatives ranked by real <b>per-unit</b> price.</div>
+  <div class="stat" id="stat"><span class="spin"></span>Loading medicine data…</div>
 
   <div class="search">
-    <input id="q" type="text" autocomplete="off" placeholder="Search brand e.g. Crocin, Augmentin, Pan 40…" aria-label="Search medicine brand">
+    <input id="q" type="text" autocomplete="off" disabled placeholder="Loading…" aria-label="Search medicine brand">
     <span class="ic">🔍</span>
     <div class="sugg" id="sugg"></div>
   </div>
 
-  <div class="chips">
-    <span>Try:</span>
-    <button data-q="Crocin">Crocin</button>
-    <button data-q="Augmentin">Augmentin</button>
-    <button data-q="Pan 40">Pan 40</button>
-    <button data-q="Azithral">Azithral</button>
-    <button data-q="Telma 40">Telma 40</button>
-  </div>
+  <div class="chips" id="chips"></div>
 
   <div id="out"></div>
 
   <div class="disclaimer" id="disc" style="display:none">
-    ⚠️ Same salt = same active ingredient, but always confirm substitution with your doctor or pharmacist. Prices shown are <b>indicative sample data</b> for demo — verify actual MRP on the pack.
+    ⚠️ <b>Confirm exact composition with your doctor or pharmacist before switching.</b>
+    Grouping uses the source's primary salts; some products may contain extra actives.
+    Comparison is by <b>per-unit price</b> (pack sizes differ). Prices are a dataset snapshot — verify on the pack. Not medical advice.
   </div>
 
   <footer>
-    <div>DawaSaver is an information tool. It does not sell medicine or give medical advice.</div>
+    <div>DawaSaver is an open-source information tool. It does not sell medicine or give medical advice.</div>
     <a class="ja-link" href="https://janaushadhi.gov.in/KendraDetails.aspx" target="_blank" rel="noopener">📍 Find nearest Jan Aushadhi Kendra →</a>
-    <div style="margin-top:12px;font-size:12px">Demo dataset — salt mappings are real (common knowledge); prices are illustrative. Not for clinical use.</div>
+    <div style="margin-top:12px;font-size:12px" id="src"></div>
   </footer>
 </div>
 
 <script>
-/* ---------- data: brand -> salt (real mappings), prices illustrative (per strip) ---------- */
-const DATA = [
-  // Paracetamol 500mg
-  {brand:"Crocin 500", salt:"Paracetamol 500mg", form:"tablet", mrp:30, kind:"brand", mfr:"GSK"},
-  {brand:"Calpol 500", salt:"Paracetamol 500mg", form:"tablet", mrp:28, kind:"brand", mfr:"GSK"},
-  {brand:"Metacin 500", salt:"Paracetamol 500mg", form:"tablet", mrp:24, kind:"brand", mfr:"Themis"},
-  {brand:"Paracetamol 500 (Generic)", salt:"Paracetamol 500mg", form:"tablet", mrp:11, kind:"generic", mfr:"Generic"},
-  {brand:"Paracetamol 500 (Jan Aushadhi)", salt:"Paracetamol 500mg", form:"tablet", mrp:6, kind:"ja", mfr:"PMBJP"},
+const money=n=>"₹"+(n>=100?n.toFixed(0):n.toFixed(2));
+const perUnit=(u,uc)=>money(u)+"/"+(uc==="ml"?"ml":"unit");
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
-  // Paracetamol 650mg
-  {brand:"Dolo 650", salt:"Paracetamol 650mg", form:"tablet", mrp:33, kind:"brand", mfr:"Micro Labs"},
-  {brand:"Crocin 650 Advance", salt:"Paracetamol 650mg", form:"tablet", mrp:32, kind:"brand", mfr:"GSK"},
-  {brand:"Paracetamol 650 (Generic)", salt:"Paracetamol 650mg", form:"tablet", mrp:14, kind:"generic", mfr:"Generic"},
-  {brand:"Paracetamol 650 (Jan Aushadhi)", salt:"Paracetamol 650mg", form:"tablet", mrp:8, kind:"ja", mfr:"PMBJP"},
-
-  // Ibuprofen 400mg
-  {brand:"Brufen 400", salt:"Ibuprofen 400mg", form:"tablet", mrp:45, kind:"brand", mfr:"Abbott"},
-  {brand:"Ibugesic 400", salt:"Ibuprofen 400mg", form:"tablet", mrp:38, kind:"brand", mfr:"Cipla"},
-  {brand:"Ibuprofen 400 (Generic)", salt:"Ibuprofen 400mg", form:"tablet", mrp:16, kind:"generic", mfr:"Generic"},
-  {brand:"Ibuprofen 400 (Jan Aushadhi)", salt:"Ibuprofen 400mg", form:"tablet", mrp:9, kind:"ja", mfr:"PMBJP"},
-
-  // Amoxicillin 500mg
-  {brand:"Mox 500", salt:"Amoxicillin 500mg", form:"capsule", mrp:65, kind:"brand", mfr:"Ranbaxy"},
-  {brand:"Novamox 500", salt:"Amoxicillin 500mg", form:"capsule", mrp:60, kind:"brand", mfr:"Cipla"},
-  {brand:"Amoxicillin 500 (Generic)", salt:"Amoxicillin 500mg", form:"capsule", mrp:28, kind:"generic", mfr:"Generic"},
-  {brand:"Amoxicillin 500 (Jan Aushadhi)", salt:"Amoxicillin 500mg", form:"capsule", mrp:17, kind:"ja", mfr:"PMBJP"},
-
-  // Amoxicillin + Clavulanic acid 625mg
-  {brand:"Augmentin 625", salt:"Amoxicillin 500mg + Clavulanic acid 125mg", form:"tablet", mrp:205, kind:"brand", mfr:"GSK"},
-  {brand:"Clavam 625", salt:"Amoxicillin 500mg + Clavulanic acid 125mg", form:"tablet", mrp:185, kind:"brand", mfr:"Alkem"},
-  {brand:"Moxikind-CV 625", salt:"Amoxicillin 500mg + Clavulanic acid 125mg", form:"tablet", mrp:170, kind:"brand", mfr:"Mankind"},
-  {brand:"Amoxiclav 625 (Generic)", salt:"Amoxicillin 500mg + Clavulanic acid 125mg", form:"tablet", mrp:95, kind:"generic", mfr:"Generic"},
-  {brand:"Amoxiclav 625 (Jan Aushadhi)", salt:"Amoxicillin 500mg + Clavulanic acid 125mg", form:"tablet", mrp:52, kind:"ja", mfr:"PMBJP"},
-
-  // Azithromycin 500mg
-  {brand:"Azithral 500", salt:"Azithromycin 500mg", form:"tablet", mrp:118, kind:"brand", mfr:"Alembic"},
-  {brand:"Azee 500", salt:"Azithromycin 500mg", form:"tablet", mrp:112, kind:"brand", mfr:"Cipla"},
-  {brand:"Azithromycin 500 (Generic)", salt:"Azithromycin 500mg", form:"tablet", mrp:48, kind:"generic", mfr:"Generic"},
-  {brand:"Azithromycin 500 (Jan Aushadhi)", salt:"Azithromycin 500mg", form:"tablet", mrp:28, kind:"ja", mfr:"PMBJP"},
-
-  // Pantoprazole 40mg
-  {brand:"Pan 40", salt:"Pantoprazole 40mg", form:"tablet", mrp:135, kind:"brand", mfr:"Alkem"},
-  {brand:"Pantop 40", salt:"Pantoprazole 40mg", form:"tablet", mrp:125, kind:"brand", mfr:"Aristo"},
-  {brand:"Pantocid 40", salt:"Pantoprazole 40mg", form:"tablet", mrp:120, kind:"brand", mfr:"Sun Pharma"},
-  {brand:"Pantoprazole 40 (Generic)", salt:"Pantoprazole 40mg", form:"tablet", mrp:42, kind:"generic", mfr:"Generic"},
-  {brand:"Pantoprazole 40 (Jan Aushadhi)", salt:"Pantoprazole 40mg", form:"tablet", mrp:22, kind:"ja", mfr:"PMBJP"},
-
-  // Omeprazole 20mg
-  {brand:"Omez 20", salt:"Omeprazole 20mg", form:"capsule", mrp:96, kind:"brand", mfr:"Dr Reddy's"},
-  {brand:"Omeprazole 20 (Generic)", salt:"Omeprazole 20mg", form:"capsule", mrp:30, kind:"generic", mfr:"Generic"},
-  {brand:"Omeprazole 20 (Jan Aushadhi)", salt:"Omeprazole 20mg", form:"capsule", mrp:16, kind:"ja", mfr:"PMBJP"},
-
-  // Metformin 500mg
-  {brand:"Glycomet 500", salt:"Metformin 500mg", form:"tablet", mrp:34, kind:"brand", mfr:"USV"},
-  {brand:"Glucophage 500", salt:"Metformin 500mg", form:"tablet", mrp:40, kind:"brand", mfr:"Merck"},
-  {brand:"Metformin 500 (Generic)", salt:"Metformin 500mg", form:"tablet", mrp:14, kind:"generic", mfr:"Generic"},
-  {brand:"Metformin 500 (Jan Aushadhi)", salt:"Metformin 500mg", form:"tablet", mrp:7, kind:"ja", mfr:"PMBJP"},
-
-  // Amlodipine 5mg
-  {brand:"Amlong 5", salt:"Amlodipine 5mg", form:"tablet", mrp:52, kind:"brand", mfr:"Micro Labs"},
-  {brand:"Amlopres 5", salt:"Amlodipine 5mg", form:"tablet", mrp:56, kind:"brand", mfr:"Cipla"},
-  {brand:"Stamlo 5", salt:"Amlodipine 5mg", form:"tablet", mrp:50, kind:"brand", mfr:"Dr Reddy's"},
-  {brand:"Amlodipine 5 (Generic)", salt:"Amlodipine 5mg", form:"tablet", mrp:18, kind:"generic", mfr:"Generic"},
-  {brand:"Amlodipine 5 (Jan Aushadhi)", salt:"Amlodipine 5mg", form:"tablet", mrp:8, kind:"ja", mfr:"PMBJP"},
-
-  // Atorvastatin 10mg
-  {brand:"Atorva 10", salt:"Atorvastatin 10mg", form:"tablet", mrp:98, kind:"brand", mfr:"Zydus"},
-  {brand:"Storvas 10", salt:"Atorvastatin 10mg", form:"tablet", mrp:92, kind:"brand", mfr:"Ranbaxy"},
-  {brand:"Atorvastatin 10 (Generic)", salt:"Atorvastatin 10mg", form:"tablet", mrp:34, kind:"generic", mfr:"Generic"},
-  {brand:"Atorvastatin 10 (Jan Aushadhi)", salt:"Atorvastatin 10mg", form:"tablet", mrp:18, kind:"ja", mfr:"PMBJP"},
-
-  // Cetirizine 10mg
-  {brand:"Cetzine 10", salt:"Cetirizine 10mg", form:"tablet", mrp:32, kind:"brand", mfr:"GSK"},
-  {brand:"Alerid 10", salt:"Cetirizine 10mg", form:"tablet", mrp:28, kind:"brand", mfr:"Cipla"},
-  {brand:"Okacet 10", salt:"Cetirizine 10mg", form:"tablet", mrp:26, kind:"brand", mfr:"Cipla"},
-  {brand:"Cetirizine 10 (Generic)", salt:"Cetirizine 10mg", form:"tablet", mrp:9, kind:"generic", mfr:"Generic"},
-  {brand:"Cetirizine 10 (Jan Aushadhi)", salt:"Cetirizine 10mg", form:"tablet", mrp:4, kind:"ja", mfr:"PMBJP"},
-
-  // Montelukast 10mg
-  {brand:"Montair 10", salt:"Montelukast 10mg", form:"tablet", mrp:185, kind:"brand", mfr:"Cipla"},
-  {brand:"Montek 10", salt:"Montelukast 10mg", form:"tablet", mrp:175, kind:"brand", mfr:"Sun Pharma"},
-  {brand:"Montelukast 10 (Generic)", salt:"Montelukast 10mg", form:"tablet", mrp:60, kind:"generic", mfr:"Generic"},
-  {brand:"Montelukast 10 (Jan Aushadhi)", salt:"Montelukast 10mg", form:"tablet", mrp:33, kind:"ja", mfr:"PMBJP"},
-
-  // Telmisartan 40mg
-  {brand:"Telma 40", salt:"Telmisartan 40mg", form:"tablet", mrp:105, kind:"brand", mfr:"Glenmark"},
-  {brand:"Telsartan 40", salt:"Telmisartan 40mg", form:"tablet", mrp:98, kind:"brand", mfr:"Dr Reddy's"},
-  {brand:"Telmisartan 40 (Generic)", salt:"Telmisartan 40mg", form:"tablet", mrp:36, kind:"generic", mfr:"Generic"},
-  {brand:"Telmisartan 40 (Jan Aushadhi)", salt:"Telmisartan 40mg", form:"tablet", mrp:19, kind:"ja", mfr:"PMBJP"},
-
-  // Losartan 50mg
-  {brand:"Losar 50", salt:"Losartan 50mg", form:"tablet", mrp:62, kind:"brand", mfr:"Unichem"},
-  {brand:"Repace 50", salt:"Losartan 50mg", form:"tablet", mrp:58, kind:"brand", mfr:"Sun Pharma"},
-  {brand:"Losartan 50 (Generic)", salt:"Losartan 50mg", form:"tablet", mrp:22, kind:"generic", mfr:"Generic"},
-  {brand:"Losartan 50 (Jan Aushadhi)", salt:"Losartan 50mg", form:"tablet", mrp:11, kind:"ja", mfr:"PMBJP"},
-
-  // Metronidazole 400mg
-  {brand:"Flagyl 400", salt:"Metronidazole 400mg", form:"tablet", mrp:44, kind:"brand", mfr:"Abbott"},
-  {brand:"Metrogyl 400", salt:"Metronidazole 400mg", form:"tablet", mrp:40, kind:"brand", mfr:"J.B."},
-  {brand:"Metronidazole 400 (Generic)", salt:"Metronidazole 400mg", form:"tablet", mrp:15, kind:"generic", mfr:"Generic"},
-  {brand:"Metronidazole 400 (Jan Aushadhi)", salt:"Metronidazole 400mg", form:"tablet", mrp:8, kind:"ja", mfr:"PMBJP"},
-
-  // Levocetirizine 5mg
-  {brand:"Xyzal 5", salt:"Levocetirizine 5mg", form:"tablet", mrp:78, kind:"brand", mfr:"UCB"},
-  {brand:"Levocet 5", salt:"Levocetirizine 5mg", form:"tablet", mrp:52, kind:"brand", mfr:"Hetero"},
-  {brand:"Levocetirizine 5 (Generic)", salt:"Levocetirizine 5mg", form:"tablet", mrp:20, kind:"generic", mfr:"Generic"},
-  {brand:"Levocetirizine 5 (Jan Aushadhi)", salt:"Levocetirizine 5mg", form:"tablet", mrp:10, kind:"ja", mfr:"PMBJP"},
-
-  // Clopidogrel 75mg
-  {brand:"Clopilet 75", salt:"Clopidogrel 75mg", form:"tablet", mrp:96, kind:"brand", mfr:"Sun Pharma"},
-  {brand:"Deplatt 75", salt:"Clopidogrel 75mg", form:"tablet", mrp:92, kind:"brand", mfr:"Torrent"},
-  {brand:"Clopidogrel 75 (Generic)", salt:"Clopidogrel 75mg", form:"tablet", mrp:38, kind:"generic", mfr:"Generic"},
-  {brand:"Clopidogrel 75 (Jan Aushadhi)", salt:"Clopidogrel 75mg", form:"tablet", mrp:20, kind:"ja", mfr:"PMBJP"}
-];
-
-/* ---------- index by salt ---------- */
-const bySalt = {};
-DATA.forEach(d=>{ (bySalt[d.salt] ||= []).push(d); });
-Object.values(bySalt).forEach(a=>a.sort((x,y)=>x.mrp-y.mrp));
-
-/* ---------- lightweight fuzzy match ---------- */
+let DATA=[], bySalt={};
 function norm(s){return s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
-function lev(a,b){
-  const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
   let prev=Array.from({length:n+1},(_,i)=>i),cur=new Array(n+1);
-  for(let i=1;i<=m;i++){cur[0]=i;
-    for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c);}
-    [prev,cur]=[cur,prev];
-  }
-  return prev[n];
-}
-function score(q,brand){
-  q=norm(q); const b=norm(brand);
-  if(!q) return 0;
-  if(b.startsWith(q)) return 100 - b.length*0.1;         // strong prefix
-  if(b.includes(q)) return 80 - b.indexOf(q);            // substring
-  // token / typo distance
-  const d=lev(q,b.slice(0,Math.max(q.length,3)));
-  const near=Math.max(0, 60 - d*18);
-  return near;
-}
-function searchBrands(q,limit=6){
-  return DATA.map(d=>({d,s:score(q,d.brand)}))
-    .filter(x=>x.s>25)
-    .sort((a,b)=>b.s-a.s)
-    .slice(0,limit)
-    .map(x=>x.d);
+  for(let i=1;i<=m;i++){cur[0]=i;for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c);}[prev,cur]=[cur,prev];}
+  return prev[n];}
+function score(q,brand){q=norm(q);const b=norm(brand);if(!q)return 0;
+  if(b.startsWith(q))return 100-b.length*0.05;
+  if(b.includes(q))return 80-b.indexOf(q)*0.5;
+  const d=lev(q,b.slice(0,Math.max(q.length,3)));return Math.max(0,55-d*18);}
+function searchBrands(q,limit=8){
+  return DATA.map(d=>({d,s:score(q,d.b)})).filter(x=>x.s>28).sort((a,b)=>b.s-a.s).slice(0,limit).map(x=>x.d);
 }
 
-/* ---------- render ---------- */
 const out=document.getElementById("out");
 const disc=document.getElementById("disc");
 const inp=document.getElementById("q");
 const suggBox=document.getElementById("sugg");
-const money=n=>"₹"+n.toFixed(0);
+const stat=document.getElementById("stat");
 
-function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
-function badge(k){return k==="brand"?'<span class="badge b-brand">BRAND</span>':k==="generic"?'<span class="badge b-gen">GENERIC</span>':'<span class="badge b-ja">JAN AUSHADHI</span>';}
-
-function cardHTML(d, searchedMrp, isSearched){
-  const saved = searchedMrp!=null && d.mrp<searchedMrp ? Math.round((1-d.mrp/searchedMrp)*100) : 0;
+function cardHTML(d, refUnit, isSearched, isLowest){
+  const saved = refUnit!=null && d.u<refUnit ? Math.round((1-d.u/refUnit)*100) : 0;
   return `<div class="card ${isSearched?'searched':''}">
     <div class="row">
       <div>
         ${isSearched?'<div class="searched-tag">You searched</div>':''}
-        <div class="brand-name">${esc(d.brand)}</div>
-        <div class="salt">${esc(d.salt)} · ${esc(d.form)}</div>
-        <div class="mfr">${esc(d.mfr)}</div>
-        ${badge(d.kind)}
-        ${saved>0?`<div class="save">↓ ${saved}% cheaper than ${esc(searchedName)}</div>`:''}
+        <div class="brand-name">${esc(d.b)}</div>
+        <div class="salt">${esc(d.s)}</div>
+        <div class="mfr">${esc(d.mf)}</div>
+        ${isLowest?'<span class="badge b-low">LOWEST PER-UNIT PRICE</span>':''}
+        ${saved>0?`<div class="save">↓ ${saved}% cheaper per unit than ${esc(searchedName)}</div>`:''}
       </div>
-      <div class="price"><div class="amt">${money(d.mrp)}</div><div class="unit">per strip*</div></div>
+      <div class="price">
+        <div class="amt">${perUnit(d.u,d.uc)}</div>
+        <div class="pack">${money(d.m)} · ${esc(d.p)}</div>
+      </div>
     </div>
   </div>`;
 }
 
 let searchedName="";
 function showResult(d){
-  searchedName=d.brand;
-  const group=bySalt[d.salt];
+  searchedName=d.b;
+  const group=bySalt[d.s+"|"+d.uc] || [];
   const cheapest=group[0];
-  const maxSave = d.mrp>0 ? Math.round((1-cheapest.mrp/d.mrp)*100) : 0;
-  const rupeeSave = d.mrp-cheapest.mrp;
-
   let html="";
-  if(cheapest.brand!==d.brand && maxSave>0){
-    html+=`<div class="hero">
-      <div class="big">Save up to ${maxSave}%</div>
-      <div class="sub">Switch <b>${esc(d.brand)}</b> (${money(d.mrp)}) → <b>${esc(cheapest.brand)}</b> (${money(cheapest.mrp)}) · same salt, save ~${money(rupeeSave)}/strip</div>
-    </div>`;
+  if(cheapest && cheapest.b!==d.b && d.u>0){
+    const save=Math.round((1-cheapest.u/d.u)*100);
+    if(save>0){
+      html+=`<div class="hero">
+        <div class="big">Save up to ${save}%</div>
+        <div class="sub">Same salt as <b>${esc(d.b)}</b> (${perUnit(d.u,d.uc)}). Cheapest: <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,cheapest.uc)}.</div>
+      </div>`;
+    }
   }
-  html+=cardHTML(d,null,true);
-
-  const alts=group.filter(x=>x.brand!==d.brand);
+  html+=cardHTML(d,null,true, cheapest&&cheapest.b===d.b);
+  const alts=group.filter(x=>x.b!==d.b);
   if(alts.length){
-    html+=`<div class="section-t">Same salt · ${esc(d.salt)} — cheaper first</div>`;
-    alts.forEach(x=>{ html+=cardHTML(x,d.mrp,false); });
+    html+=`<div class="section-t">Same salt · ${esc(d.s)} — ${alts.length} alternative${alts.length>1?'s':''}, cheapest first</div>`;
+    alts.forEach((x,i)=> html+=cardHTML(x,d.u,false, i===0 && cheapest.b!==d.b));
   }else{
-    html+=`<div class="empty">No alternatives in demo dataset yet.</div>`;
+    html+=`<div class="empty">No same-salt alternative found in this dataset.</div>`;
   }
   out.innerHTML=html;
   disc.style.display="block";
@@ -326,47 +190,69 @@ function showEmpty(){
   out.innerHTML=`<div class="empty"><div class="em">💊</div>Search a brand above to see cheaper same-salt options.</div>`;
   disc.style.display="none";
 }
-showEmpty();
 
-/* ---------- suggestions ---------- */
+/* suggestions */
 let hlIdx=-1, curSugg=[];
 function renderSugg(list){
   curSugg=list; hlIdx=-1;
   if(!list.length){suggBox.classList.remove("on");suggBox.innerHTML="";return;}
-  suggBox.innerHTML=list.map((d,i)=>`<div data-i="${i}"><span>${esc(d.brand)}</span><small>${esc(d.salt)}</small></div>`).join("");
+  suggBox.innerHTML=list.map((d,i)=>`<div data-i="${i}"><span>${esc(d.b)}</span><small>${esc(d.s)}</small></div>`).join("");
   suggBox.classList.add("on");
-  [...suggBox.children].forEach(el=>el.onclick=()=>{const d=curSugg[+el.dataset.i];inp.value=d.brand;showResult(d);});
+  [...suggBox.children].forEach(el=>el.onclick=()=>{const d=curSugg[+el.dataset.i];inp.value=d.b;showResult(d);});
 }
-inp.addEventListener("input",()=>{
-  const q=inp.value.trim();
-  if(q.length<1){suggBox.classList.remove("on");return;}
-  renderSugg(searchBrands(q));
-});
+inp.addEventListener("input",()=>{const q=inp.value.trim();if(q.length<1){suggBox.classList.remove("on");return;}renderSugg(searchBrands(q));});
 inp.addEventListener("keydown",e=>{
   if(!suggBox.classList.contains("on"))return;
   if(e.key==="ArrowDown"){e.preventDefault();hlIdx=Math.min(hlIdx+1,curSugg.length-1);}
   else if(e.key==="ArrowUp"){e.preventDefault();hlIdx=Math.max(hlIdx-1,0);}
-  else if(e.key==="Enter"){e.preventDefault();
-    if(hlIdx>=0)showResult(curSugg[hlIdx]);
-    else if(curSugg.length)showResult(curSugg[0]);
-    return;}
+  else if(e.key==="Enter"){e.preventDefault();if(hlIdx>=0)showResult(curSugg[hlIdx]);else if(curSugg.length)showResult(curSugg[0]);return;}
   else return;
   [...suggBox.children].forEach((el,i)=>el.classList.toggle("hl",i===hlIdx));
 });
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))suggBox.classList.remove("on");});
 
-/* chips */
-document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{
-  inp.value=b.dataset.q; const r=searchBrands(b.dataset.q); if(r.length)showResult(r[0]);
-});
-
-/* theme toggle */
-const tbtn=document.getElementById("theme");
-tbtn.onclick=()=>{
+/* theme */
+document.getElementById("theme").onclick=()=>{
   const cur=document.documentElement.getAttribute("data-theme");
-  const next = cur==="dark"?"light":cur==="light"?"dark": (matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark");
+  const next=cur==="dark"?"light":cur==="light"?"dark":(matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark");
   document.documentElement.setAttribute("data-theme",next);
 };
+
+/* build example chips from real high-spread groups */
+function buildChips(meta){
+  const chips=document.getElementById("chips");
+  const groups={};
+  Object.entries(bySalt).forEach(([k,arr])=>{if(arr.length>=3)groups[k]=arr;});
+  const ranked=Object.values(groups).map(arr=>{
+    const lo=arr[0].u, hi=arr[arr.length-1].u;
+    return {arr,spread:hi>0?(hi-lo)/hi:0};
+  }).sort((a,b)=>b.spread-a.spread).slice(0,6);
+  let html='<span>Try:</span>';
+  ranked.forEach(g=>{const dear=g.arr[g.arr.length-1];html+=`<button data-b="${esc(dear.b)}">${esc(dear.b.split(" ").slice(0,2).join(" "))}</button>`;});
+  chips.innerHTML=html;
+  chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    inp.value=b.dataset.b;const r=searchBrands(b.dataset.b);if(r.length)showResult(r[0]);
+  });
+}
+
+/* load real data */
+fetch("data/drugs.json")
+  .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+  .then(j=>{
+    DATA=j.drugs;
+    bySalt={};
+    DATA.forEach(d=>{(bySalt[d.s+"|"+d.uc] ||= []).push(d);});
+    Object.values(bySalt).forEach(a=>a.sort((x,y)=>x.u-y.u));
+    stat.innerHTML=`Comparing <b>${j.meta.count.toLocaleString()}</b> medicines across <b>${j.meta.groups}</b> salt groups · updated ${j.meta.generated.slice(0,10)}`;
+    document.getElementById("src").innerHTML=`Data: <a href="${esc(j.meta.source_url)}" target="_blank" rel="noopener">${esc(j.meta.source)}</a> · regenerated weekly. Not for clinical use.`;
+    inp.disabled=false; inp.placeholder="Search brand e.g. Augmentin, Pan, Azithral…"; inp.focus();
+    buildChips(j.meta);
+    showEmpty();
+  })
+  .catch(e=>{
+    stat.innerHTML=`⚠️ Could not load medicine data (${esc(e.message)}). Refresh the page.`;
+    inp.placeholder="Data unavailable";
+  });
 </script>
 </body>
 </html>
