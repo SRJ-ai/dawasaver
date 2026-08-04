@@ -145,11 +145,18 @@
   .reveal{animation:rise .4s cubic-bezier(.2,.7,.2,1) both}
   @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
+  /* two-column results */
+  .results{display:grid;gap:18px}
+  .pinned>*+*{margin-top:14px}
+  .stream>*+*{margin-top:0}
+
   /* responsive */
   @media (min-width:900px){
     .hero{padding:52px 0 8px}
     .motif{display:block}
     .searchwrap{margin-top:30px}
+    .results{grid-template-columns:minmax(300px,360px) 1fr;gap:26px;align-items:start}
+    .pinned{position:sticky;top:88px}
   }
   @media (hover:hover) and (pointer:fine){
     .lrow:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
@@ -194,9 +201,11 @@
       <button data-q="Crocin">Crocin</button>
     </div>
     <div class="stat" id="stat"><span class="spin"></span>Loading…</div>
+  </div>
 
-    <div id="out"></div>
+  <div id="out"></div>
 
+  <div class="col">
     <div class="disclaimer" id="disc" style="display:none">
       <b>Confirm exact composition with your doctor or pharmacist before switching.</b>
       Grouping uses primary salts; some products may carry extra actives. Comparison is by
@@ -306,30 +315,32 @@ function render(){
   const items=curItems, maxU=items[items.length-1].u||1;
   const sIdx=Math.max(0,items.findIndex(x=>x.b===searchedName));
   const searched=items[sIdx], cheapest=items[0];
-  let html="";
   let save=0;
   if(cheapest.b!==searched.b && searched.u>0) save=Math.round((1-cheapest.u/searched.u)*100);
-  if(save>0) html+=`<div class="banner reveal">
+
+  let left="";
+  if(save>0) left+=`<div class="banner reveal">
     <div class="kick">You could save</div>
     <div class="big num" id="bignum">0%</div>
     <div class="sub">Same salt as <b>${esc(searched.b)}</b> at ${perUnit(searched.u,curGroup.uc)}. Cheapest is <b>${esc(cheapest.b)}</b> at ${perUnit(cheapest.u,curGroup.uc)}.</div>
   </div>`;
-
-  html+=`<div class="lead">You searched</div>
+  left+=`<div class="lead">You searched</div>
     <div class="you reveal"><div class="eyebrow">${esc(curGroup.s)}</div>
     <div class="rowline"><div><span class="name">${esc(searched.b)}</span><div class="mfr">${esc(searched.mf)}</div></div>
       <div><div class="amt num">${perUnit(searched.u,curGroup.uc)}</div><div class="pack num">${money(searched.m)} · ${esc(searched.p)}</div></div></div></div>`;
 
   const alts=items.filter((_,i)=>i!==sIdx);
+  let right="";
   if(alts.length){
     const first=Math.min(alts.length,40);
-    html+=`<div class="lead">Same salt · cheapest first<span class="rt">${alts.length} alternative${alts.length>1?'s':''}</span></div>`;
-    html+=`<div class="ladder reveal" id="ladder">`+
+    right+=`<div class="lead">Same salt · cheapest first<span class="rt">${alts.length} alternative${alts.length>1?'s':''}</span></div>`;
+    right+=`<div class="ladder reveal" id="ladder">`+
       alts.slice(0,first).map((x,i)=>ladderRow(x,maxU,searched.u,x.b===cheapest.b&&cheapest.b!==searched.b,i)).join("")+`</div>`;
-    if(alts.length>first) html+=`<button class="more" id="more">Show ${alts.length-first} more</button>`;
-  }else html+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
+    if(alts.length>first) right+=`<button class="more" id="more">Show ${alts.length-first} more</button>`;
+  }else right+=`<div class="empty">No same-salt alternative in the dataset.</div>`;
 
-  out.innerHTML=html; disc.style.display="block";
+  out.innerHTML=`<div class="results"><div class="pinned">${left}</div><div class="stream">${right}</div></div>`;
+  disc.style.display="block";
   const bn=document.getElementById("bignum"); if(bn) animateCount(bn,save);
   const ladder=document.getElementById("ladder"); if(ladder) fillBars(ladder);
   const mb=document.getElementById("more");
